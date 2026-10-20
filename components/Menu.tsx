@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useDialog } from "@/lib/useDialog";
 import type { AppState, Mode } from "@/lib/types";
 import { rangeStart, summarize, type Range } from "@/lib/stats";
 import Pie, { Legend } from "./Pie";
@@ -28,10 +29,12 @@ export default function Menu({
   onClose: () => void;
 }) {
   const [view, setView] = useState<View>("menu");
+  const drawer = useRef<HTMLDivElement>(null);
+  useDialog(drawer, onClose);
 
   return (
-    <div className="scrim left" onClick={onClose} onKeyDown={(e) => e.key === "Escape" && onClose()}>
-      <aside className="drawer" role="dialog" aria-label="Menu" onClick={(e) => e.stopPropagation()}>
+    <div className="scrim left" onClick={onClose}>
+      <div ref={drawer} className="drawer" role="dialog" aria-modal="true" aria-label="Menu" onClick={(e) => e.stopPropagation()}>
         <div className="drawer-head">
           {view !== "menu" ? (
             <button className="link" onClick={() => setView("menu")}>
@@ -53,7 +56,7 @@ export default function Menu({
         )}
         {view === "history" && <History state={state} update={update} />}
         {view === "settings" && <Settings state={state} update={update} />}
-      </aside>
+      </div>
     </div>
   );
 }

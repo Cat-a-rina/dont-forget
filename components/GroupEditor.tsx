@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
+import InlineRename from "./InlineRename";
 import type { Group } from "@/lib/types";
 import { UNSORTED } from "@/lib/categorize";
 import { uid } from "@/lib/actions";
@@ -50,6 +51,7 @@ export default function GroupEditor({
   /** Names of lists already in the app; shown at the bottom as places to drop items. */
   existingLists?: string[];
 }) {
+  const base = useId();
   const drag = useRef<{ from: string; id: string } | null>(null);
   const [over, setOver] = useState<string | null>(null);
   const [grabbedId, setGrabbedId] = useState<string | null>(null);
@@ -165,7 +167,11 @@ export default function GroupEditor({
             drop(g.key);
           }}
         >
+          <label className="sr-only" htmlFor={`${base}-name-${g.key}`}>
+            Group name
+          </label>
           <input
+            id={`${base}-name-${g.key}`}
             className="group-name"
             value={g.name}
             onChange={(e) => rename(g.key, e.target.value)}
@@ -175,7 +181,6 @@ export default function GroupEditor({
                 e.currentTarget.blur();
               }
             }}
-            aria-label="Group name"
             placeholder={UNSORTED}
           />
           <ul className="plain-list">
@@ -218,23 +223,14 @@ export default function GroupEditor({
                   &#8942;&#8942;
                 </span>
                 {editingId === i.id ? (
-                  <input
-                    className="inline-edit grow"
-                    defaultValue={i.title}
-                    autoFocus
-                    aria-label="Item"
-                    draggable={false}
-                    onFocus={(e) => e.currentTarget.select()}
-                    onBlur={(e) => {
-                      retitle(i.id, e.currentTarget.value);
+                  <InlineRename
+                    className="inline-edit"
+                    value={i.title}
+                    label="Item name"
+                    validate={(v) => (v.trim() ? null : `An item needs a name. Type one, or press Escape to keep \u201c${i.title}\u201d.`)}
+                    onCommit={(v) => {
+                      retitle(i.id, v);
                       setEditingId(null);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") e.currentTarget.blur();
-                      if (e.key === "Escape") {
-                        e.currentTarget.value = i.title;
-                        e.currentTarget.blur();
-                      }
                     }}
                   />
                 ) : (
@@ -254,7 +250,7 @@ export default function GroupEditor({
         className={`new-group${over === "new" ? " drop" : ""}`}
         role="button"
         tabIndex={0}
-        aria-label="New group. With an item picked up, press Enter to move it here."
+        aria-label="Drag an item here to start a new group. With an item picked up, press Enter to move it here."
         onKeyDown={(e) => zoneKey(e, "new")}
         onDragOver={(e) => {
           if (!drag.current) return;

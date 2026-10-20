@@ -64,7 +64,7 @@ export default function AppearancePicker({
     <div className="appearance">
       {show.includes("theme") && (
         <section>
-          <h3 className="faint small">Theme</h3>
+          <h2 className="faint small">Theme</h2>
           <Choices<Theme>
             label="Theme"
             value={appearance.theme}
@@ -89,7 +89,7 @@ export default function AppearancePicker({
       )}
       {show.includes("font") && (
         <section>
-          <h3 className="faint small">Font</h3>
+          <h2 className="faint small">Font</h2>
           <Choices<FontChoice>
             label="Font"
             value={appearance.font}
@@ -112,7 +112,7 @@ export default function AppearancePicker({
       )}
       {show.includes("layout") && (
         <section>
-          <h3 className="faint small">Layout</h3>
+          <h2 className="faint small">Layout</h2>
           <Choices<Layout>
             label="Layout"
             value={appearance.layout}

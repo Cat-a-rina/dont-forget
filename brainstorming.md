@@ -184,3 +184,25 @@ The look is a printed paper to-do list: dark brown text and thin ruled lines on 
 - **Settings > Cleared lists** shows every cleared list with a **Bring back** button. Adding an item to a list with the same name, or creating a list with that name, also brings it back.
 - A list with repeating items (like "Leaving the house") is hidden, not erased, so its routine returns when it is brought back.
 
+## Forms: errors, saved drafts, and accessibility
+
+**Errors sit next to the field and say what to do next.** Buttons are never silently greyed out. Pressing one with a problem shows a short message under the field, marks the field as invalid (`aria-invalid`, linked with `aria-describedby`), and moves the keyboard to it. Examples: "Give this item a name, like "Call the dentist"." / ""Family" is already a list. Choose a different name, or press Escape to keep "Groceries"." / "Add at least one item first: type it in the box above and press Enter." This covers the add and edit sheet, the new list sheet, add and sort, the quick "Add an item" rows, renaming a list or item, and onboarding (including the import preview). When the browser can't save, a warning appears next to the title and inside the add sheets, and the banner at the top offers Export.
+
+**What was typed is kept.** Typing in any sheet or in onboarding is saved in the browser as it happens. Escape, a click outside the sheet, or a refresh never loses it, and reopening shows "We kept what you typed last time. Discard it". Only the **Cancel** button throws a draft away, and a successful add or finish clears it. A bad rename keeps the text in the box. Onboarding remembers the step, the name, the time zone, and every list and half-typed item ("Welcome back... Start over").
+
+**Keyboard access.**
+- Every control can be reached and used from the keyboard. There is a "Skip to your lists" link at the top of the hub. Anything done by dragging or swiping has a keyboard or button alternative (check button, pencil, F2, arrow keys on the handles).
+- Dialogs and the menu drawer move focus inside when they open, keep Tab and Shift+Tab inside, close with Escape, and return focus to the button that opened them. They are marked as modal dialogs.
+- Everything that takes typing shows a clear outline when it has focus.
+
+**Real labels.** Every field has a real `<label>` connected to it, visible where there is room (Item, List name, Your name, Date, Items to add) and visually hidden where the design uses a placeholder (quick-add rows, category names, group names, rename boxes). Groups of choices are labelled radio groups. The page has headings in order, and the Preview screens have a level-one heading.
+
+**Text contrast, checked.** Text and icon colors were measured against the white sheets and the cream page and darkened where they fell short (muted text, the brand color, and six of the eight list colors now reach at least 4.5 to 1). Placeholders, completed items, counts, and the "Clear from board" link no longer use faded opacity. The only intentionally faded text is the inactive steps in onboarding, which are not interactive.
+
+**How it was checked.** An automated accessibility scan (axe-core, WCAG 2 A and AA plus best practices) was run on 11 screens and states with zero violations: onboarding steps and Preview, the hub with and without the welcome card, the edit sheet, the add menu, the ordering popover, the Completed tab, and Settings. Scripted keyboard tests confirmed the error messages, saved drafts, focus trapping, focus return, and that every focusable control on the hub shows a focus indicator. A scan can't judge everything, so a pass with a real screen reader is still worth doing.
+
+## Layout and motion details
+
+- **Lists fill the page top to bottom.** On the hub, lists flow down one column and then the next, so a short list (like a finished one) never leaves a gap under it. Reading order matches keyboard order. The Notebook layout stays a single column.
+- **Checking off is slower and calmer.** The row slides away over about half a second and then the gap closes (about 0.7 seconds in all), and the check mark pops in. With reduced motion turned on in the device, the pop is skipped and the changes are instant.
+

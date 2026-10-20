@@ -37,7 +37,7 @@ export default function CompletedList({
     <div className="completed">
       {days.map((d) => (
         <section key={d.label}>
-          <h3 className="faint small day-label">{d.label}</h3>
+          <h2 className="faint small day-label">{d.label}</h2>
           <ul className="history">
             {d.items.map((c) => {
               const cat = categories.find((x) => x.id === c.categoryId);

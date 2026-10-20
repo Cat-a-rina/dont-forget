@@ -184,8 +184,8 @@ textarea {
   border-radius: 12px;
 }
 .title-input::placeholder {
-  color: var(--foreground);
-  opacity: 0.28;
+  color: var(--placeholder);
+  opacity: 1;
 }
 /* A rounded ring that matches the other inputs, not the browser's square blue box. */
 .title-input:focus-visible,
@@ -277,7 +277,6 @@ textarea {
 .count {
   margin-left: 0.35rem;
   font-size: 0.8rem;
-  opacity: 0.7;
 }
 
 .section {
@@ -356,7 +355,7 @@ textarea {
 }
 .item.done .item-title {
   text-decoration: line-through;
-  opacity: 0.5;
+  color: var(--muted);
 }
 .item-title {
   flex: 1;
@@ -804,6 +803,7 @@ textarea {
 }
 .day-label {
   margin-bottom: 0.2rem;
+  font-weight: 600;
 }
 .history li {
   align-items: center;
@@ -1169,22 +1169,22 @@ html[data-theme="paper"] {
   --background: #f6f3ee;
   --surface: #ffffff;
   --foreground: #4a3424;
-  --muted: #8a7560;
+  --muted: #6f5d4b;
   --line: #e6ddd0;
   --accent: #4a3424;
-  --brand: #c4683a;
+  --brand: #a55731;
   --danger: #a63a2f;
   --warn: #8f5f12;
   --rule: #6b5036;
   --sheet-edge: #ddd2c2;
-  --c0: #c4683a;
-  --c1: #5f7f93;
-  --c2: #6f8a4a;
-  --c3: #b8607c;
-  --c4: #b8872b;
-  --c5: #4f8a82;
+  --c0: #a55731;
+  --c1: #547081;
+  --c2: #5d743e;
+  --c3: #a2546d;
+  --c4: #8a6520;
+  --c5: #43756e;
   --c6: #a8483c;
-  --c7: #7a63a0;
+  --c7: #78619d;
   --deco-display: inline-block;
   --deco-flex: flex;
 }
@@ -1889,16 +1889,158 @@ html[data-layout="sheet"] .section-head.editing .inline-edit {
   color: var(--muted);
   text-decoration: underline;
   padding: 0.2rem 0.3rem;
-  opacity: 0.8;
 }
 .clear-list:hover,
 .clear-list:focus-visible {
   color: var(--foreground);
-  opacity: 1;
 }
 .cleared-banner {
   flex-wrap: wrap;
 }
 .toast.stacked {
   bottom: 9rem;
+}
+
+/* ---- Accessibility: labels, errors, drafts, skip link, focus, contrast ---- */
+:root {
+  --placeholder: #6b5846;
+}
+::placeholder {
+  color: var(--placeholder);
+  opacity: 1;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.field-label {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+.field-error {
+  display: flex;
+  gap: 0.3rem;
+  margin-top: 0.3rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--danger);
+  line-height: 1.35;
+}
+input[aria-invalid="true"],
+textarea[aria-invalid="true"] {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 1px var(--danger);
+}
+.draft-note {
+  margin: 0 0 0.8rem;
+  padding: 0.5rem 0.8rem;
+  border: 1.5px dashed var(--rule);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--brand) 8%, var(--sheet));
+  color: var(--foreground);
+}
+.draft-note .link {
+  color: var(--foreground);
+  text-decoration: underline;
+  padding: 0;
+}
+.skip-link {
+  position: absolute;
+  left: 0.6rem;
+  top: -4rem;
+  z-index: 50;
+  padding: 0.6rem 1rem;
+  background: var(--accent);
+  color: var(--background);
+  border-radius: 10px;
+  font-weight: 700;
+}
+.skip-link:focus {
+  top: 0.6rem;
+}
+.save-warning {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--danger);
+  border: 1.5px solid var(--danger);
+  border-radius: 999px;
+  padding: 0.1rem 0.6rem;
+  white-space: nowrap;
+}
+.rename {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 6rem;
+  min-width: 0;
+}
+.rename .inline-edit {
+  width: 100%;
+}
+.sheet-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+/* Every box you can type in shows a clear outline when it has the keyboard. */
+.inline-form input:focus-visible,
+.draft-list .add-row input:focus-visible {
+  outline: none;
+  background: color-mix(in srgb, var(--brand) 10%, transparent);
+  box-shadow: 0 2px 0 var(--foreground);
+}
+.field-error + .field-error {
+  margin-top: 0.2rem;
+}
+
+/* ---- Calmer check-off ---- */
+.item-wrap {
+  transition: max-height 0.45s ease 0.2s, opacity 0.45s ease 0.15s;
+}
+.check.on {
+  animation: check-pop 0.5s ease-out;
+}
+@keyframes check-pop {
+  0% {
+    transform: scale(0.6);
+  }
+  60% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .check.on {
+    animation: none;
+  }
+}
+
+/* ---- Lists fill the page top to bottom, so a short list never leaves a gap under it ---- */
+.sections {
+  display: block;
+  columns: 330px;
+  column-gap: 1.6rem;
+}
+.sections .section {
+  break-inside: avoid;
+  margin-bottom: 1.6rem;
+}
+html[data-layout="sheet"] .sections .section {
+  margin-bottom: 2rem;
+  padding-bottom: 1.1rem;
+}
+html[data-layout="notebook"] .sections {
+  columns: 1;
+}
+html[data-layout="sheet"] .progress {
+  padding-bottom: 1rem;
 }

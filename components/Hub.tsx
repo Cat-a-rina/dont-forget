@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { AppState, Category, Item } from "@/lib/types";
 import { paletteAt } from "@/lib/style";
 import Confetti, { makePieces, type Piece } from "./Confetti";
@@ -16,6 +16,8 @@ import NewListSheet from "./NewListSheet";
 import Progress from "./Progress";
 import Doodle, { BottomEdge, type DoodleName } from "./Doodles";
 import ModePicker from "./ModePicker";
+import InlineRename from "./InlineRename";
+import FieldError from "./FieldError";
 import CompletedList from "./CompletedList";
 import { rangeStart, summarize } from "@/lib/stats";
 
@@ -33,7 +35,7 @@ interface Toast {
   prompt: boolean;
 }
 
-export default function Hub({ state, update }: { state: AppState; update: Update }) {
+export default function Hub({ state, update, saveFailed = false }: { state: AppState; update: Update; saveFailed?: boolean }) {
   const [tab, setTab] = useState<string>("hub");
   const [adding, setAdding] = useState<{ categoryId: string | null } | null>(null);
   const [menu, setMenu] = useState(false);
@@ -144,7 +146,10 @@ export default function Hub({ state, update }: { state: AppState; update: Update
   };
 
   return (
-    <main className="screen hub">
+    <main className="screen hub" id="main">
+      <a className="skip-link" href="#lists">
+        Skip to your lists
+      </a>
       <BottomEdge />
       <header className="topbar">
         <div className="menu-wrap">
@@ -166,8 +171,13 @@ export default function Hub({ state, update }: { state: AppState; update: Update
           )}
         </div>
         <h1>Don&rsquo;t Forget&hellip;!</h1>
+        {saveFailed && (
+          <span className="save-warning" role="status">
+            Not saving: export from Settings
+          </span>
+        )}
         <div className="add-wrap">
-          <button className="btn primary add-btn" aria-haspopup="menu" aria-expanded={addMenu} onClick={() => setAddMenu((v) => !v)}>
+          <button id="add-button" className="btn primary add-btn" aria-haspopup="menu" aria-expanded={addMenu} onClick={() => setAddMenu((v) => !v)}>
             + Add
           </button>
           {addMenu && (
@@ -177,7 +187,10 @@ export default function Hub({ state, update }: { state: AppState; update: Update
                 className="add-menu"
                 role="menu"
                 onKeyDown={(e) => {
-                  if (e.key === "Escape") setAddMenu(false);
+                  if (e.key === "Escape") {
+                    setAddMenu(false);
+                    document.getElementById("add-button")?.focus();
+                  }
                   if (e.key === "ArrowDown" || e.key === "ArrowUp") {
                     e.preventDefault();
                     const btns = [...e.currentTarget.querySelectorAll<HTMLElement>("button")];
@@ -229,6 +242,7 @@ export default function Hub({ state, update }: { state: AppState; update: Update
         )}
         <div className="mode-wrap">
           <button
+            id="mode-button"
             className="pill mode-pill"
             aria-haspopup="dialog"
             aria-expanded={modeOpen}
@@ -240,7 +254,12 @@ export default function Hub({ state, update }: { state: AppState; update: Update
           {modeOpen && (
             <>
               <div className="menu-scrim" onClick={() => setModeOpen(false)} />
-              <div className="mode-pop" role="dialog" aria-label="Order your lists" onKeyDown={(e) => e.key === "Escape" && setModeOpen(false)}>
+              <div className="mode-pop" role="dialog" aria-label="Order your lists" onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setModeOpen(false);
+                    document.getElementById("mode-button")?.focus();
+                  }
+                }}>
                 <ModePicker mode={state.mode} onPick={(m) => update((s) => ({ ...s, mode: m }))} />
               </div>
             </>
@@ -249,13 +268,14 @@ export default function Hub({ state, update }: { state: AppState; update: Update
       </div>
 
       <nav className="tabs" aria-label="Lists">
-        <button className={tab === "hub" ? "tab on" : "tab"} onClick={() => setTab("hub")}>
+        <button className={tab === "hub" ? "tab on" : "tab"} aria-current={tab === "hub" ? "true" : undefined} onClick={() => setTab("hub")}>
           Hub
         </button>
         {ordered.map((c) => (
           <button
             key={c.id}
             className={`${tab === c.id ? "tab on" : "tab"}${over === `tab:${c.id}` ? " drop" : ""}`}
+            aria-current={tab === c.id ? "true" : undefined}
             onClick={() => setTab(c.id)}
             onDragOver={(e) => {
               if (drag.current?.kind !== "item") return;
@@ -275,7 +295,7 @@ export default function Hub({ state, update }: { state: AppState; update: Update
             <span className="count">{openCount(c)}</span>
           </button>
         ))}
-        <button className={tab === "completed" ? "tab on" : "tab"} onClick={() => setTab("completed")}>
+        <button className={tab === "completed" ? "tab on" : "tab"} aria-current={tab === "completed" ? "true" : undefined} onClick={() => setTab("completed")}>
           Completed<span className="count">{state.log.length}</span>
         </button>
       </nav>
@@ -284,7 +304,7 @@ export default function Hub({ state, update }: { state: AppState; update: Update
         <aside className="hub-side">
           <Progress state={state} nowMs={now.getTime()} onViewCompleted={() => setTab("completed")} />
         </aside>
-        <div className="hub-main">
+        <div className="hub-main" id="lists" tabIndex={-1}>
           {allDone && tab !== "completed" && (
             <div className="banner all-done" role="status">
               <strong>Everything is done for now.</strong>
@@ -345,22 +365,19 @@ export default function Hub({ state, update }: { state: AppState; update: Update
                   <span className="badge" aria-hidden>
                     {p.icon}
                   </span>
-                  <input
-                    className="inline-edit"
-                    defaultValue={c.name}
-                    autoFocus
-                    aria-label="List name"
-                    onFocus={(e) => e.currentTarget.select()}
-                    onBlur={(e) => {
-                      update((s) => renameCategory(s, c.id, e.currentTarget.value));
+                  <InlineRename
+                    value={c.name}
+                    label="List name"
+                    validate={(v) =>
+                      !v.trim()
+                        ? `A list needs a name. Type one, or press Escape to keep \u201c${c.name}\u201d.`
+                        : state.categories.some((x) => x.id !== c.id && x.name.toLowerCase() === v.trim().toLowerCase())
+                          ? `\u201c${v.trim()}\u201d is already a list. Choose a different name, or press Escape to keep \u201c${c.name}\u201d.`
+                          : null
+                    }
+                    onCommit={(v) => {
+                      update((s) => renameCategory(s, c.id, v));
                       setEditingCat(null);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") e.currentTarget.blur();
-                      if (e.key === "Escape") {
-                        e.currentTarget.value = c.name;
-                        e.currentTarget.blur();
-                      }
                     }}
                   />
                 </div>
@@ -463,6 +480,7 @@ export default function Hub({ state, update }: { state: AppState; update: Update
                   ))}
                   <li className="inline-add">
                     <InlineAdd
+                      listName={c.name}
                       onAdd={(title) =>
                         update((s) => addItem(s, { title, categoryId: c.id, newCategory: "", repeat: defaultRepeat(c), due: null }))
                       }
@@ -486,6 +504,7 @@ export default function Hub({ state, update }: { state: AppState; update: Update
           existingTitles={(id) => state.items.filter((i) => i.categoryId === id).map((i) => i.title)}
           onAdd={onAdd}
           onClose={() => setAdding(null)}
+          saveFailed={saveFailed}
         />
       )}
 
@@ -511,6 +530,7 @@ export default function Hub({ state, update }: { state: AppState; update: Update
             setEditItem(null);
           }}
           onClose={() => setEditItem(null)}
+          saveFailed={saveFailed}
         />
       )}
 
@@ -553,6 +573,7 @@ export default function Hub({ state, update }: { state: AppState; update: Update
             setNewList(false);
           }}
           onClose={() => setNewList(false)}
+          saveFailed={saveFailed}
         />
       )}
 
@@ -611,7 +632,7 @@ function ItemRow({
     }
     setGone(true);
     setDx(-500);
-    setTimeout(onComplete, 180);
+    setTimeout(onComplete, 700);
   };
 
   return (
@@ -621,7 +642,7 @@ function ItemRow({
       </div>
       <div
         className={`item${doneToday ? " done" : ""}${info && !doneToday && (info.state === "overdue" || info.state === "today") ? ` urgent ${info.state}` : ""}`}
-        style={{ transform: `translateX(${dx}px)`, transition: dragging ? "none" : "transform .18s" }}
+        style={{ transform: `translateX(${dx}px)`, transition: dragging ? "none" : "transform .5s ease-in-out" }}
         onPointerDown={(e) => {
           if (doneToday || (e.target as HTMLElement).closest("button, input, [data-grip]")) return;
           start.current = e.clientX;
@@ -679,22 +700,14 @@ function ItemRow({
           {doneToday ? "✓" : ""}
         </button>
         {editing ? (
-          <input
+          <InlineRename
             className="inline-edit item-edit"
-            defaultValue={item.title}
-            autoFocus
-            aria-label="Item"
-            onFocus={(e) => e.currentTarget.select()}
-            onBlur={(e) => {
-              onRename(e.currentTarget.value);
+            value={item.title}
+            label="Item name"
+            validate={(v) => (v.trim() ? null : `An item needs a name. Type one, or press Escape to keep \u201c${item.title}\u201d.`)}
+            onCommit={(v) => {
+              onRename(v);
               setEditing(false);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") e.currentTarget.blur();
-              if (e.key === "Escape") {
-                e.currentTarget.value = item.title;
-                e.currentTarget.blur();
-              }
             }}
           />
         ) : (
@@ -768,23 +781,46 @@ function ToastBar({
 }
 
 /** Type straight into a list from the hub: Enter adds the item and keeps the box ready for the next one. */
-function InlineAdd({ onAdd }: { onAdd: (title: string) => void }) {
+function InlineAdd({ listName, onAdd }: { listName: string; onAdd: (title: string) => void }) {
+  const id = useId();
   const [draft, setDraft] = useState("");
+  const [error, setError] = useState<string | null>(null);
   return (
-    <form
-      className="inline-form"
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (draft.trim()) {
+    <>
+      <form
+        className="inline-form"
+        noValidate
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!draft.trim()) {
+            setError(`Type an item first, then press Enter to add it to \u201c${listName}\u201d.`);
+            return;
+          }
           onAdd(draft.trim());
           setDraft("");
-        }
-      }}
-    >
-      <span className="plus" aria-hidden>
-        +
-      </span>
-      <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Add an item" aria-label="Add an item to this list" />
-    </form>
+          setError(null);
+        }}
+      >
+        <span className="plus" aria-hidden>
+          +
+        </span>
+        <label className="sr-only" htmlFor={id}>
+          Add an item to {listName}
+        </label>
+        <input
+          id={id}
+          value={draft}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            if (error) setError(null);
+          }}
+          placeholder="Add an item"
+          aria-invalid={!!error}
+          aria-describedby={error ? `${id}-error` : undefined}
+          onBlur={() => !draft.trim() && setError(null)}
+        />
+      </form>
+      <FieldError id={`${id}-error`} message={error} />
+    </>
   );
 }

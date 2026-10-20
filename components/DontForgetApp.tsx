@@ -63,7 +63,7 @@ export default function DontForgetApp() {
       {!state.onboarded || !state.profile.setupDone ? (
         <Onboarding state={state} update={update} />
       ) : (
-        <Hub state={state} update={update} />
+        <Hub state={state} update={update} saveFailed={failed} />
       )}
     </>
   );
