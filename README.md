@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Don't Forget…!
 
-## Getting Started
+A dynamic hub for the tasks, items, and events you'd normally forget but still need to do. It adapts to the time of day, stays easy to scan, and keeps the user in control: time-of-day ordering, date-priority ordering, or fully manual.
 
-First, run the development server:
+- [brainstorming.md](brainstorming.md): steps, states, errors, and the main/return visit details
+- [flows.md](flows.md): all diagrams, including the item lifecycle and error paths
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Flows
+
+### First visit
+
+```mermaid
+flowchart TD
+    A([Open app, no saved data]) --> B{Choose a start}
+    B -->|Build my own| C[Notes-style page with faint suggested title]
+    B -->|Dump everything| D[One big text box]
+    C --> E[Add items and categories by hand]
+    D --> F[Auto-categorize]
+    F --> G{Confidence high?}
+    G -->|Yes| H[Review screen: rename, merge, split, move]
+    G -->|No| I[Low-confidence items go to Unsorted]
+    I --> H
+    H --> J[Confirm]
+    E --> K[Hub]
+    J --> K
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Main visit
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```mermaid
+flowchart TD
+    A([Open app]) --> B[Load items and settings]
+    B --> C[Run daily reset]
+    C --> D{Ordering mode}
+    D -->|Time-of-day| E[Rotate context lists by clock and weekday]
+    D -->|Date-priority| F[Overdue, then today, then upcoming]
+    D -->|Manual| G[User order, drag handles on]
+    E --> H[Hub]
+    F --> H
+    G --> H
+    H --> I[Pinned context, e.g. Night out, goes on top]
+    I --> J{User action}
+    J -->|Tap or swipe tab| K[Focus one category]
+    K -->|Tap Hub| H
+    J -->|Swipe item| L[Complete, show undo toast]
+    J -->|Tap plus| M[Add item]
+    J -->|Hamburger| N[History and Stats or Settings]
+    J -->|Collapse section| O[Hide section]
+    L --> P{Repeat behavior}
+    P -->|Resets| Q[Dimmed as done today]
+    P -->|One-and-done| R[Move to History]
+    P -->|Chain| S[Offer next step]
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Return visit and daily reset
 
-## Learn More
+```mermaid
+flowchart TD
+    A([Open app]) --> B[Read lastOpenedDate]
+    B --> C{Same day?}
+    C -->|Yes| H[Hub as left]
+    C -->|No| D[Run reset once, even after many days away]
+    D --> E{Item type}
+    E -->|Resetting| F[Uncheck for today]
+    E -->|One-and-done| G[Stay in History]
+    E -->|Chain, step completed| I[Show Add next step prompt again]
+    E -->|Dated, past due| J[Move to Overdue]
+    J --> K{Stale for N days?}
+    K -->|Yes| L[Soft prompt: still need this?]
+    K -->|No| M[Keep in Overdue]
+    F --> N[Save lastOpenedDate]
+    G --> N
+    I --> N
+    L --> N
+    M --> N
+    N --> H
+```
 
-To learn more about Next.js, take a look at the following resources:
+These are copies of the diagrams in [flows.md](flows.md), since GitHub can't include one Markdown file in another. Update both together.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Getting started
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Built with Next.js (App Router, TypeScript). Data is stored locally in the browser for v1.
 
-## Deploy on Vercel
+```bash
+npm install
+npm run dev
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Open [http://localhost:3000](http://localhost:3000).
