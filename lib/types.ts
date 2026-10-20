@@ -1,3 +1,5 @@
+import type { Appearance } from "./appearance";
+
 export type Mode = "time" | "date" | "manual";
 export type Context = "leaving" | "arriving" | null;
 export type Repeat = "daily" | "once";
@@ -41,6 +43,8 @@ export interface Profile {
   /** IANA zone like "America/Chicago"; empty means use the device's zone */
   timeZone: string;
   setupDone: boolean;
+  /** false until the user dismisses the "you're all set" card after onboarding */
+  welcomed: boolean;
 }
 
 export interface AppState {
@@ -52,6 +56,7 @@ export interface AppState {
   log: Completion[];
   lastOpened: string;
   profile: Profile;
+  appearance: Appearance;
 }
 
 export interface Group {

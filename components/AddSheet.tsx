@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Category, Repeat } from "@/lib/types";
 import { defaultRepeat } from "@/lib/actions";
 import { todayStr } from "@/lib/dates";
+import { paletteAt } from "@/lib/style";
 
 const NEW = "__new__";
 
@@ -46,7 +47,7 @@ export default function AddSheet({
   };
 
   return (
-    <div className="scrim" onClick={onClose}>
+    <div className="scrim" onClick={onClose} onKeyDown={(e) => e.key === "Escape" && onClose()}>
       <form
         className="sheet"
         role="dialog"
@@ -67,23 +68,32 @@ export default function AddSheet({
         />
         {dupe && <p className="faint small">Already on this list. You can still add it.</p>}
 
-        <label className="field">
+        <div className="field">
           <span>List</span>
-          <select
-            value={cat}
-            onChange={(e) => {
-              setCat(e.target.value);
-              setRepeat(defaultRepeat(categories.find((c) => c.id === e.target.value)));
-            }}
-          >
+          <div className="chips" role="radiogroup" aria-label="List">
             {categories.map((c) => (
-              <option key={c.id} value={c.id}>
+              <button
+                key={c.id}
+                type="button"
+                role="radio"
+                aria-checked={cat === c.id}
+                className={`pick${cat === c.id ? " on" : ""}`}
+                onClick={() => {
+                  setCat(c.id);
+                  setRepeat(defaultRepeat(c));
+                }}
+              >
+                <span aria-hidden style={cat === c.id ? undefined : { color: paletteAt(c.style).color }}>
+                  {paletteAt(c.style).icon}
+                </span>{" "}
                 {c.name}
-              </option>
+              </button>
             ))}
-            <option value={NEW}>+ New list&hellip;</option>
-          </select>
-        </label>
+            <button type="button" role="radio" aria-checked={creating} className={`pick${creating ? " on" : ""}`} onClick={() => setCat(NEW)}>
+              + New list
+            </button>
+          </div>
+        </div>
         {creating && (
           <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="List name" aria-label="New list name" />
         )}

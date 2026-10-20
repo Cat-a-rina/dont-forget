@@ -5,6 +5,9 @@ import type { AppState, Group } from "@/lib/types";
 import { parseDump, UNSORTED } from "@/lib/categorize";
 import { seed, uid } from "@/lib/actions";
 import { todayStr } from "@/lib/dates";
+import { unusedSuggestions } from "@/lib/suggestions";
+import { DoodleRow } from "./Doodles";
+import GroupEditor, { toEditGroups, toGroups, type EditGroup } from "./GroupEditor";
 
 type Update = (fn: (s: AppState) => AppState) => void;
 
@@ -23,16 +26,6 @@ interface DraftList {
   draft: string;
 }
 
-interface ReviewItem {
-  id: string;
-  title: string;
-}
-interface ReviewGroup {
-  key: string;
-  name: string;
-  items: ReviewItem[];
-}
-
 const newList = (): DraftList => ({ key: uid(), title: "", items: [], draft: "" });
 
 /** Pending text in an add-item box counts as an item when the user moves on. */
@@ -42,7 +35,7 @@ function flushed(lists: DraftList[]): DraftList[] {
 
 export default function FirstVisit({ state, update }: { state: AppState; update: Update }) {
   const [lists, setLists] = useState<DraftList[]>(() => [newList()]);
-  const [review, setReview] = useState<ReviewGroup[] | null>(null);
+  const [review, setReview] = useState<EditGroup[] | null>(null);
   const [n, setN] = useState(0);
   const [focused, setFocused] = useState<string | null>(null);
 
@@ -50,6 +43,13 @@ export default function FirstVisit({ state, update }: { state: AppState; update:
     const t = setInterval(() => setN((x) => x + 1), 3000);
     return () => clearInterval(t);
   }, []);
+
+  // Fill the first empty list's title, otherwise start a new list with that title.
+  const addSuggested = (title: string) =>
+    setLists((ls) => {
+      const empty = ls.find((l) => !l.title.trim() && l.items.length === 0 && !l.draft.trim());
+      return empty ? ls.map((l) => (l === empty ? { ...l, title } : l)) : [...flushed(ls), { ...newList(), title }];
+    });
 
   const finish = (groups: Group[]) => update((s) => seed(s, groups, todayStr()));
   const imported = state.items.length;
@@ -66,7 +66,7 @@ export default function FirstVisit({ state, update }: { state: AppState; update:
     }
     if (groups.length === 0) return finish([]);
     setLists(flushed(lists));
-    setReview(groups.map((g) => ({ key: uid(), name: g.name, items: g.items.map((title) => ({ id: uid(), title })) })));
+    setReview(toEditGroups(groups));
   };
 
   // Lists are kept exactly as written. An untitled list becomes "Unsorted".
@@ -79,13 +79,20 @@ export default function FirstVisit({ state, update }: { state: AppState; update:
         groups={review}
         setGroups={(g) => setReview(g)}
         onBack={() => setReview(null)}
-        onConfirm={() => finish(review.map((g) => ({ name: g.name, context: null, items: g.items.map((i) => i.title) })))}
+        onConfirm={() => finish(toGroups(review))}
       />
     );
   }
 
   return (
     <main className="screen write">
+      <DoodleRow names={["leaf", "sparkle", "mushroom", "smiley", "flower", "pumpkin"]} />
+      <button
+        className="link"
+        onClick={() => update((s) => ({ ...s, profile: { ...s.profile, setupDone: false } }))}
+      >
+        &lsaquo; Back to setup
+      </button>
       <header className="intro">
         <h1 className="brand">Don&rsquo;t Forget&hellip;!</h1>
         <p className="faint">
@@ -108,7 +115,13 @@ export default function FirstVisit({ state, update }: { state: AppState; update:
               className="title-input"
               value={l.title}
               onChange={(e) => patch(l.key, { title: e.target.value })}
-              placeholder="Enter category name"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  document.getElementById(`item-${l.key}`)?.focus();
+                }
+              }}
+              placeholder="Category name (Optional)"
               aria-label="Category name"
             />
             <button
@@ -141,9 +154,12 @@ export default function FirstVisit({ state, update }: { state: AppState; update:
             onSubmit={(e) => {
               e.preventDefault();
               if (l.draft.trim()) patch(l.key, { items: [...l.items, l.draft.trim()], draft: "" });
+              // Enter on an empty box means "I'm done": jump to the Sort it! button.
+              else if (hasItems) document.getElementById("sort-it")?.focus();
             }}
           >
             <input
+              id={`item-${l.key}`}
               value={l.draft}
               onChange={(e) => patch(l.key, { draft: e.target.value })}
               onPaste={(e) => {
@@ -165,6 +181,17 @@ export default function FirstVisit({ state, update }: { state: AppState; update:
         </section>
       ))}
 
+      <div className="suggested">
+        <p className="faint small">Suggested lists</p>
+        <div className="chips">
+          {unusedSuggestions([...lists.map((l) => l.title), ...state.categories.map((c) => c.name)]).map((s) => (
+            <button key={s} type="button" className="suggest" onClick={() => addSuggested(s)}>
+              + {s}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <button className="link new-list" onClick={() => setLists((ls) => [...flushed(ls), newList()])}>
         + New list
       </button>
@@ -174,7 +201,7 @@ export default function FirstVisit({ state, update }: { state: AppState; update:
           <button className="btn ghost" disabled={!hasItems} onClick={createManually}>
             Create Manually
           </button>
-          <button className="btn primary" disabled={!hasItems} onClick={sort}>
+          <button id="sort-it" className="btn primary" disabled={!hasItems} onClick={sort}>
             Sort it!
           </button>
         </div>
@@ -189,79 +216,35 @@ function Review({
   onBack,
   onConfirm,
 }: {
-  groups: ReviewGroup[];
-  setGroups: (g: ReviewGroup[]) => void;
+  groups: EditGroup[];
+  setGroups: (g: EditGroup[]) => void;
   onBack: () => void;
   onConfirm: () => void;
 }) {
-  const rename = (key: string, name: string) => setGroups(groups.map((g) => (g.key === key ? { ...g, name } : g)));
-  const remove = (key: string, id: string) =>
-    setGroups(groups.map((g) => (g.key === key ? { ...g, items: g.items.filter((i) => i.id !== id) } : g)));
-  const move = (from: string, id: string, to: string) => {
-    const item = groups.find((g) => g.key === from)?.items.find((i) => i.id === id);
-    if (!item || from === to) return;
-    setGroups(
-      groups.map((g) => {
-        if (g.key === from) return { ...g, items: g.items.filter((i) => i.id !== id) };
-        if (g.key === to) return { ...g, items: [...g.items, item] };
-        return g;
-      }),
-    );
-  };
   const total = groups.reduce((n, g) => n + g.items.length, 0);
-
-  if (total === 0) {
-    return (
-      <main className="screen">
-        <button className="link" onClick={onBack}>
-          &lsaquo; Back
-        </button>
-        <p className="faint">Nothing to sort yet.</p>
-      </main>
-    );
-  }
 
   return (
     <main className="screen">
       <button className="link" onClick={onBack}>
         &lsaquo; Back
       </button>
-      <p className="faint small">Rename a group or move items. Groups with the same name are merged.</p>
-      {groups
-        .filter((g) => g.items.length > 0)
-        .map((g) => (
-          <section key={g.key} className="review-group">
-            <input
-              className="group-name"
-              value={g.name}
-              onChange={(e) => rename(g.key, e.target.value)}
-              aria-label="Group name"
-              placeholder={UNSORTED}
-            />
-            <ul className="plain-list">
-              {g.items.map((i) => (
-                <li key={i.id} className="plain-row">
-                  <span>{i.title}</span>
-                  <select value={g.key} onChange={(e) => move(g.key, i.id, e.target.value)} aria-label={`Move ${i.title}`}>
-                    {groups.map((o) => (
-                      <option key={o.key} value={o.key}>
-                        {o.name || UNSORTED}
-                      </option>
-                    ))}
-                  </select>
-                  <button className="icon-btn" aria-label={`Remove ${i.title}`} onClick={() => remove(g.key, i.id)}>
-                    &times;
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))}
-      <div className="footer-bar">
-        <button className="btn primary" onClick={onConfirm}>
-          Looks good
-        </button>
-      </div>
+      {total === 0 ? (
+        <p className="faint">Nothing to sort yet.</p>
+      ) : (
+        <>
+          <h2 className="brand">Preview</h2>
+          <p className="faint small">
+            This is just a preview, so your lists aren&rsquo;t set up yet. Rename a group, or drag items between groups and within them. Groups
+            with the same name are merged.
+          </p>
+          <GroupEditor groups={groups} setGroups={setGroups} />
+          <div className="footer-bar">
+            <button className="btn primary" autoFocus onClick={onConfirm}>
+              Looks good
+            </button>
+          </div>
+        </>
+      )}
     </main>
   );
 }

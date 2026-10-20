@@ -56,7 +56,7 @@ export function orderCategories(cats: Category[], items: Item[], mode: Mode, now
 }
 
 export function orderItems(items: Item[], mode: Mode): Item[] {
-  const byCreated = [...items].sort((a, b) => a.createdAt - b.createdAt);
-  if (mode !== "date") return byCreated;
-  return byCreated.sort((a, b) => (a.due ?? "9999").localeCompare(b.due ?? "9999"));
+  // Items keep the order the user gave them (the order of the saved list); date mode sorts by due date.
+  if (mode !== "date") return [...items];
+  return [...items].sort((a, b) => (a.due ?? "9999").localeCompare(b.due ?? "9999"));
 }

@@ -14,12 +14,14 @@ flowchart TD
     A([Open app, no saved data]) --> B[Title and short description]
     B --> C[Setup, every step skippable: name]
     C --> D[Import a to-do list, simulated sources]
-    D --> E[Time zone: day, evening, or night]
+    D --> D2[Preview: rename groups, drag items between groups, confirm]
+    D2 --> E
+    E[Time zone: day, evening, or night]
     E --> F[List editor: category name plus items, add more lists, or paste many lines]
     F --> G{Bottom buttons}
     G -->|Create Manually| H[Lists kept as written, untitled list becomes Unsorted]
     G -->|Sort it!| I[Titled lists kept, untitled items auto-categorized]
-    I --> J[Review screen: rename, merge, move]
+    I --> J[Review screen: rename, merge, drag items]
     J -->|Unsure items| K[Placed in Unsorted]
     J --> L[Looks good]
     H --> M[Hub]
@@ -81,7 +83,7 @@ These are copies of the diagrams in [flows.md](flows.md), since GitHub can't inc
 
 ## Status
 
-First iteration. Working: first visit (skippable setup for name, import, and time zone, then a list editor with Sort it! or Create Manually and a review screen), hub with tabs and collapsible lists, "+ Add", swipe or tap to complete with undo, chain "Next step", daily reset on return, History & Stats with a pie chart, and the three ordering modes in Settings. Importing is simulated (made-up tasks, no real accounts). Not yet: dragging individual items (only lists reorder, in "My own order" mode), weekend lists, notifications, sync.
+First iteration. Working: first visit (skippable setup for name, import, and time zone, then a list editor with Sort it! or Create Manually and a review screen), hub with tabs and collapsible lists, "+ Add" menu at the top (auto-categorize new items, add a list, or add to a list), suggested lists, swipe or tap to complete with undo, chain "Next step", daily reset on return, History & Stats with a pie chart, and the three ordering modes in Settings. Importing is simulated (made-up tasks, no real accounts). Items can be dragged within a list or between lists (drag the grip, drop on an item, a list, or a tab) with a mouse, or moved with the keyboard (focus the grip, then arrow keys; Shift+arrow changes list). Touch-screen drag is not built yet. Customizable look (7 themes, 5 font pairings, 4 layouts) in Settings, defaulting to a paper to-do list with little icons. Also working: confetti and an "All done" state when a list is cleared, a welcome card after onboarding, a Completed tab, a progress pie on the hub, and typing straight into any list. Not yet: weekend lists, notifications, sync.
 
 To replay the first visit, open the menu, then Settings, then "Erase everything".
 

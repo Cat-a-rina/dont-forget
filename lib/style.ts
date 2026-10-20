@@ -2,14 +2,14 @@
  * Every category gets a color AND a shape AND its name, so nothing relies on color alone.
  */
 export const PALETTE = [
-  { color: "#c2410c", icon: "●" },
-  { color: "#1d4ed8", icon: "▲" },
-  { color: "#15803d", icon: "■" },
-  { color: "#a21caf", icon: "◆" },
-  { color: "#b45309", icon: "★" },
-  { color: "#0f766e", icon: "✚" },
-  { color: "#be123c", icon: "⬢" },
-  { color: "#4338ca", icon: "☾" },
+  { color: "var(--c0)", icon: "●" },
+  { color: "var(--c1)", icon: "▲" },
+  { color: "var(--c2)", icon: "■" },
+  { color: "var(--c3)", icon: "◆" },
+  { color: "var(--c4)", icon: "★" },
+  { color: "var(--c5)", icon: "✚" },
+  { color: "var(--c6)", icon: "⬢" },
+  { color: "var(--c7)", icon: "☾" },
 ];
 
 export function paletteAt(i: number) {

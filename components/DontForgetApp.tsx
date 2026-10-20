@@ -14,6 +14,18 @@ export default function DontForgetApp() {
   const [dismissed, setDismissed] = useState(false);
   const onboarded = state?.onboarded ?? false;
   const lastOpened = state?.lastOpened;
+  const theme = state?.appearance.theme;
+  const font = state?.appearance.font;
+  const layout = state?.appearance.layout;
+
+  // Apply the chosen look to the page.
+  useEffect(() => {
+    if (!theme || !font || !layout) return;
+    const root = document.documentElement;
+    root.dataset.theme = theme;
+    root.dataset.font = font;
+    root.dataset.layout = layout;
+  }, [theme, font, layout]);
 
   // Return visit: when the app opens on a new day, repeating items start fresh. Runs once per day.
   useEffect(() => {

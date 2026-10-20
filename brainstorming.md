@@ -7,9 +7,9 @@ This doc adds the steps, states, and errors the original brainstorm didn't cover
 ## Steps (flows)
 
 1. **First visit:** onboarding comes first, before the user touches the tool. No account and no permissions are required, and every step can be skipped ("Skip" on each step, "Skip setup" at the top).
-   - **Setup:** the app title and a one-line description sit above step 1. (1) *Name*: used for a greeting on the hub. (2) *Import a to-do list*: pick a source (Apple Reminders, Google Tasks, Todoist) and its tasks are auto-filed into lists. The sources are simulated in this prototype and import made-up tasks. (3) *Time zone*: "Use my location" reads only the device's time zone, or pick one by hand, so the app knows when it's day (5am-5pm), evening (5-10pm), or night (10pm-5am) and can order lists to match. Name and time zone can be changed later in Settings.
-   - **List editor:** opens in a notes style. Each list has a faint "Enter category name" and its own "+ Add" item box. "+ New list" adds more lists, so things can be categorized immediately, and a trash can deletes a list. Pasting many lines into an item box splits them into items. Placeholder suggestions ("e.g. Keys, wallet, phone before leaving") only appear on the line the user is typing in; other lines just say "Add an item".
-   - **Two buttons at the bottom:** **Sort it!** keeps titled lists as they are and auto-categorizes the items in untitled lists, then shows a **review screen** to rename, merge, or move items before confirming. **Create Manually** keeps the lists exactly as written (an untitled list becomes "Unsorted") and goes straight to the hub. Short descriptions of both sit at the top of the editor.
+   - **Setup:** the app title and a one-line description sit above step 1. (1) *Name*: used for a greeting on the hub. (2) *Import a to-do list*: pick a source (Apple Reminders, Google Tasks, Todoist) and a **preview** shows how its tasks will be filed. The screen is titled **Preview** so it is clear this is not the tool yet. The user can rename groups, drag items between groups or within a group, or remove items, and nothing is added until they confirm (or they go **Back**). The sources are simulated in this prototype and import made-up tasks. (3) *Time zone*: "Use my location" reads only the device's time zone, or pick one by hand, so the app knows when it's day (5am-5pm), evening (5-10pm), or night (10pm-5am) and can order lists to match. Name and time zone can be changed later in Settings.
+   - **List editor:** opens in a notes style. Each list has a faint "Category name (Optional)" and its own "+ Add" item box. "+ New list" adds more lists, so things can be categorized immediately, and a trash can deletes a list. Pasting many lines into an item box splits them into items. Placeholder suggestions ("e.g. Keys, wallet, phone before leaving") only appear on the line the user is typing in; other lines just say "Add an item".
+   - **Two buttons at the bottom:** **Sort it!** keeps titled lists as they are and auto-categorizes the items in untitled lists, then shows a **Preview** screen (titled so, since it is not the tool yet) to rename groups, merge them, or drag items between and within groups before confirming. **Create Manually** keeps the lists exactly as written (an untitled list becomes "Unsorted") and goes straight to the hub. Short descriptions of both sit at the top of the editor.
    - Auto-sort treats a line that ends in ":" or names a known category as a heading. Items it can't place go to "Unsorted" instead of being guessed.
 2. **Ordering mode picker** (Settings, with a gentle prompt after first use): Time-of-day / Date-priority / Manual (drag). Manual is the "off" state.
 3. **Item creation:** type a title, then optionally set category, repeat behavior, date/time, and context tags (leaving, arriving, night out, weekend). Defaults come from the category.
@@ -98,3 +98,60 @@ What we took from it:
 - Next.js (App Router, TypeScript), local-first storage for v1.
 - No accounts or cross-device sync in v1.
 - No reminders or notifications in v1.
+
+## Moving items and keyboard use
+
+- **Drag and drop:** the same gesture reorders an item within its list and moves it between lists, on the Preview screens and on the hub. Drop on another item to land before it, on a list to land at the end, or on a list's tab. In "By date" mode the order inside a list follows the due date, so only the list changes.
+- **Keyboard on the Preview screens:** Tab to an item's handle (⋮⋮). Up/Down moves between items. Enter picks the item up; then Up/Down reorders it, Left/Right moves it to the previous or next group, and Enter drops it. While an item is picked up, Tab to "new group" or one of your lists and press Enter to drop it there. Escape cancels.
+- **Keyboard on the hub:** focus an item's handle, then Up/Down reorders it and Shift+Up/Down moves it to the previous or next list. In "My own order" mode, Alt+Up/Down on a list header moves the whole list. Escape closes the add sheet and the menu.
+- **Keyboard in onboarding:** Enter continues on every step (name, import, time zone, Preview). In the list editor, Enter in the category name jumps to the item box, Enter adds an item, and Enter on an empty item box jumps to "Sort it!".
+- **Not built yet:** drag on touch screens (the browser's built-in drag doesn't run on touch).
+
+## Going back in onboarding
+
+- Setup steps 2 and 3 each have a **Back** button, and the list editor has a "Back to setup" link, so an accidental skip is easy to undo. Imports already added are kept and are not duplicated if repeated.
+- After onboarding, **Settings > Set up again** reopens setup with the saved name and time zone filled in. Finishing or skipping returns to the hub.
+
+## Adding from the hub
+
+- The **+ Add** button sits at the top of the hub and opens a small menu with three choices:
+  - **Add new items and auto-categorize:** type or paste items, see a **Preview** of how they will be filed (rename groups, drag items), then add them. Groups named like an existing list are added to it. The bottom of the Preview shows **your existing lists** as drop targets, so an item can be dragged onto one to add it there.
+  - **Add new list:** name a list (or tap a suggestion) and add its first items right there, then create it.
+  - **Add items to list:** the single-item form. The list is chosen by tapping one of the existing lists (or "+ New list"), then repeat and date.
+- **Suggested lists** (Leaving the house, Groceries, Kids, Work, Family, Health, Home, Errands, Pets, School) appear as one-tap chips in the first-visit list editor and in "Add new list". A suggestion disappears once a list with that name exists.
+- The list tabs wrap onto extra rows instead of being cut off at the edge of the screen.
+- **Type straight into a list:** every list on the hub ends with an "Add an item" box. Type and press Enter to add to that list, with no Add button needed.
+
+## Completed items and progress on the hub
+
+- A **Completed** tab sits at the end of the tab strip. Checked-off items land there, grouped by day, and one-time items can be restored. (Repeating items such as "Leaving the house" stay in place, crossed out, and also appear here.)
+- A compact **progress card** with the pie chart (Today or Week) sits at the top of the hub on a phone, and beside the lists on a wide screen. It links to the Completed tab. The full chart stays in the menu under History & Your Stats.
+
+## Screen size
+
+The hub fits a phone first. On wider screens the lists flow into columns and the progress card moves to a side column. Onboarding screens stay narrow on purpose.
+
+## Celebration and theme
+
+- **List cleared:** when the last open item in a list is checked off, a short burst of confetti falls, the toast says "<List> is all done!" (with Undo), and the list keeps an "All done ✓" badge, a full progress bar, and a "Nice work!" row until the next day's reset. Clearing every list shows a bigger burst and an "Everything is done for now" card on the hub.
+- **Progress bars:** each list header shows a thin bar for how much of today's work in that list is done.
+- **After onboarding:** the first time the hub opens, a "You're all set" card with confetti appears until dismissed with "Got it".
+- **Reduced motion:** confetti and pop animations are turned off for people who prefer reduced motion. The text and badges still show.
+- **Look:** a warm orange accent (focus rings, step dots, logo mark, welcome card) on top of the per-list colors, tinted list headers.
+
+## Renaming in place
+
+- Double-click a list's title to rename it, or double-click an item to edit it. Enter saves, Escape cancels, and clicking away saves. With the keyboard, press F2 on a list header or an item's handle.
+- A blank name, or a list name already in use, is ignored and the old name stays. Renaming a list also updates its name in the Completed tab and History.
+- Single-clicking a list header still collapses it, after a brief pause so a double-click can rename instead.
+
+## Customizable look
+
+The default look is a printed paper to-do list: dark brown text and thin ruled lines on white, circle checkboxes, each list's name in a hand-drawn oval, and small icons (flowers, a smiley, a mushroom, a pumpkin, a leaf, a sparkle, a little bean character) along the page and on each sheet's corners. The icons are simple drawings made for this app, and they are decoration only. The look is chosen in **Settings** (and the theme and font in an optional **Pick a look** setup step), saved on the device, and never changes how anything works.
+
+- **Themes:** Paper (white, default), Sage (soft green backdrop), Blush (pale pink), Pumpkin (warm cream with dotted lines), Checkerboard (a cream page on pink and green squares), Midnight (dark plum), and Classic (the plain original, follows the device's light or dark setting). The icons show on the paper themes only. Each theme has its own list colors, and lists still use a color, a shape, and a name together.
+- **Fonts:** Handwritten (Caveat and Patrick Hand, default), Rounded (Fredoka and Nunito), Storybook (Fraunces and Lora), Typewriter (Special Elite and Courier Prime), and Clean (Geist).
+- **Layouts:** Sheet (paper to-do pages with ruled lines, default), Cards (lists side by side), Notebook (one ruled page, top to bottom), and Scrapbook (taped, slightly tilted cards).
+- **Keyboard:** each group of choices is a radio group. Tab lands on the chosen option, and the arrow keys move the choice.
+- **Older saved looks:** a saved theme, font, or layout that no longer exists falls back to the default.
+- **Ideas not built yet:** a "Notes" patch with a stitched border for free text, seasonal icon sets, and choosing which icon goes on which list.

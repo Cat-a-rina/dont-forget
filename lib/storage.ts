@@ -1,5 +1,6 @@
 import type { AppState, Profile } from "./types";
 import { todayStr } from "./dates";
+import { DEFAULT_APPEARANCE, cleanAppearance } from "./appearance";
 
 const KEY = "dont-forget:v1";
 const BACKUP = `${KEY}:backup`;
@@ -43,7 +44,7 @@ export function getRaw(): string | null {
 export const getFailed = () => failed;
 
 export function freshState(): AppState {
-  return { version: 1, onboarded: false, mode: "time", categories: [], items: [], log: [], lastOpened: todayStr(), profile: { name: "", timeZone: "", setupDone: false } };
+  return { version: 1, onboarded: false, mode: "time", categories: [], items: [], log: [], lastOpened: todayStr(), profile: { name: "", timeZone: "", setupDone: false, welcomed: false }, appearance: { ...DEFAULT_APPEARANCE } };
 }
 
 function valid(s: unknown): s is AppState {
@@ -53,8 +54,8 @@ function valid(s: unknown): s is AppState {
 
 /** Data saved before the setup step existed has no profile; those users skip setup. */
 function normalize(s: AppState): AppState {
-  const defaults: Profile = { name: "", timeZone: "", setupDone: true };
-  return { ...s, profile: { ...defaults, ...s.profile } };
+  const defaults: Profile = { name: "", timeZone: "", setupDone: true, welcomed: true };
+  return { ...s, profile: { ...defaults, ...s.profile }, appearance: cleanAppearance(s.appearance) };
 }
 
 function tryParse(raw: string | null): AppState | null {

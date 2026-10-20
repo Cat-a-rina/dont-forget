@@ -1,5 +1,5 @@
 import type { AppState, Category, Completion, Context, Group, Item, Repeat } from "./types";
-import { contextFor, parseDump } from "./categorize";
+import { contextFor } from "./categorize";
 import { daysBetween } from "./dates";
 
 export const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -58,7 +58,9 @@ export function addItem(
   return { ...state, categories, items: [...state.items, item] };
 }
 
-export function completeItem(state: AppState, id: string, today: string): { state: AppState; completion: Completion; snapshot: Item } | null {
+export function completeItem(
+  state: AppState, id: string, today: string,
+): { state: AppState; completion: Completion; snapshot: Item; index: number } | null {
   const item = state.items.find((i) => i.id === id);
   if (!item) return null;
   const cat = state.categories.find((c) => c.id === item.categoryId);
@@ -70,13 +72,15 @@ export function completeItem(state: AppState, id: string, today: string): { stat
     item.repeat === "daily"
       ? state.items.map((i) => (i.id === id ? { ...i, doneOn: today } : i))
       : state.items.filter((i) => i.id !== id);
-  return { state: { ...state, items, log: [...state.log, completion] }, completion, snapshot: item };
+  return { state: { ...state, items, log: [...state.log, completion] }, completion, snapshot: item, index: state.items.indexOf(item) };
 }
 
-export function undoComplete(state: AppState, snapshot: Item, completionId: string): AppState {
+export function undoComplete(state: AppState, snapshot: Item, completionId: string, index: number): AppState {
+  const rest = state.items.filter((i) => i.id !== snapshot.id);
+  const at = Math.min(Math.max(index, 0), rest.length);
   return {
     ...state,
-    items: [...state.items.filter((i) => i.id !== snapshot.id), snapshot],
+    items: [...rest.slice(0, at), snapshot, ...rest.slice(at)],
     log: state.log.filter((c) => c.id !== completionId),
   };
 }
@@ -132,18 +136,59 @@ export function moveCategory(state: AppState, fromId: string, toId: string): App
   return { ...state, categories: cats };
 }
 
-/** Files imported task titles into lists: matching lists are reused, the rest go to new lists or "Unsorted". */
-export function importItems(state: AppState, titles: string[]): AppState {
+/**
+ * Drag-and-drop: move an item into a category (the same one to reorder). It goes before `beforeId`,
+ * or to the end of the category when no id is given. List order is the order of `state.items`.
+ */
+export function moveItem(state: AppState, itemId: string, categoryId: string, beforeId?: string | null): AppState {
+  const item = state.items.find((i) => i.id === itemId);
+  if (!item || itemId === beforeId) return state;
+  const rest = state.items.filter((i) => i.id !== itemId);
+  let at = beforeId ? rest.findIndex((i) => i.id === beforeId) : -1;
+  if (at < 0) {
+    const last = rest.reduce((n, i, k) => (i.categoryId === categoryId ? k : n), -1);
+    at = last < 0 ? rest.length : last + 1;
+  }
+  return { ...state, items: [...rest.slice(0, at), { ...item, categoryId }, ...rest.slice(at)] };
+}
+
+/** Adds previewed groups: matching lists are reused, the rest become new lists. Titles already on a list are skipped. */
+export function importGroups(state: AppState, groups: Group[]): AppState {
   let next = state;
-  for (const g of parseDump(titles.join("\n"), state.categories.map((c) => c.name))) {
+  for (const g of groups) {
     for (const title of g.items) {
       if (next.items.some((i) => i.title.toLowerCase() === title.toLowerCase())) continue;
       const existing = next.categories.find((c) => c.name.toLowerCase() === g.name.toLowerCase());
       next = addItem(next, {
         title, categoryId: existing?.id ?? null, newCategory: existing ? "" : g.name,
-        repeat: defaultRepeat(existing ?? { context: contextFor(g.name) } as Category), due: null,
+        repeat: defaultRepeat(existing ?? ({ context: contextFor(g.name) } as Category)), due: null,
       });
     }
   }
   return next;
+}
+
+/** Adds an empty list. Does nothing if a list with that name already exists. */
+export function addList(state: AppState, name: string): AppState {
+  const n = name.trim();
+  if (!n || state.categories.some((c) => c.name.toLowerCase() === n.toLowerCase())) return state;
+  return { ...state, categories: [...state.categories, makeCategory(n, state.categories.length)] };
+}
+
+/** Renames a list. Blank names and names already used by another list are ignored. */
+export function renameCategory(state: AppState, id: string, name: string): AppState {
+  const n = name.trim();
+  if (!n || state.categories.some((c) => c.id !== id && c.name.toLowerCase() === n.toLowerCase())) return state;
+  return {
+    ...state,
+    categories: state.categories.map((c) => (c.id === id ? { ...c, name: n } : c)),
+    log: state.log.map((c) => (c.categoryId === id ? { ...c, categoryName: n } : c)),
+  };
+}
+
+/** Renames an item. Blank titles are ignored. */
+export function renameItem(state: AppState, id: string, title: string): AppState {
+  const t = title.trim();
+  if (!t) return state;
+  return { ...state, items: state.items.map((i) => (i.id === id ? { ...i, title: t } : i)) };
 }

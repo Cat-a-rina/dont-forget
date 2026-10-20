@@ -9,12 +9,14 @@ flowchart TD
     A([Open app, no saved data]) --> B[Title and short description]
     B --> C[Setup, every step skippable: name]
     C --> D[Import a to-do list, simulated sources]
-    D --> E[Time zone: day, evening, or night]
+    D --> D2[Preview: rename groups, drag items between groups, confirm]
+    D2 --> E
+    E[Time zone: day, evening, or night]
     E --> F[List editor: category name plus items, add more lists, or paste many lines]
     F --> G{Bottom buttons}
     G -->|Create Manually| H[Lists kept as written, untitled list becomes Unsorted]
     G -->|Sort it!| I[Titled lists kept, untitled items auto-categorized]
-    I --> J[Review screen: rename, merge, move]
+    I --> J[Review screen: rename, merge, drag items]
     J -->|Unsure items| K[Placed in Unsorted]
     J --> L[Looks good]
     H --> M[Hub]
