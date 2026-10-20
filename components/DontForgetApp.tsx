@@ -7,6 +7,7 @@ import { todayStr } from "@/lib/dates";
 import { exportData } from "@/lib/storage";
 import FirstVisit from "./FirstVisit";
 import Hub from "./Hub";
+import Setup from "./Setup";
 
 export default function DontForgetApp() {
   const { state, recovered, failed, update } = useAppState();
@@ -48,7 +49,13 @@ export default function DontForgetApp() {
           </button>
         </div>
       )}
-      {state.onboarded ? <Hub state={state} update={update} /> : <FirstVisit update={update} />}
+      {!state.profile.setupDone ? (
+        <Setup state={state} update={update} />
+      ) : !state.onboarded ? (
+        <FirstVisit state={state} update={update} />
+      ) : (
+        <Hub state={state} update={update} />
+      )}
     </>
   );
 }

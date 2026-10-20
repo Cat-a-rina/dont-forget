@@ -11,18 +11,19 @@ A dynamic hub for the tasks, items, and events you'd normally forget but still n
 
 ```mermaid
 flowchart TD
-    A([Open app, no saved data]) --> B{Choose a start, no account needed}
-    B -->|Build my own| C[Notes-style page, faint suggested title, + Add button]
-    B -->|Dump everything| D[One big text box with rotating example prompts]
-    C --> E[Add items and categories by hand]
-    D --> F[Auto-categorize]
-    F --> G{Confidence high?}
-    G -->|Yes| H[Review screen: rename, merge, split, move]
-    G -->|No| I[Low-confidence items go to Unsorted]
-    I --> H
-    H --> J[Confirm]
-    E --> K[Hub]
-    J --> K
+    A([Open app, no saved data]) --> B[Title and short description]
+    B --> C[Setup, every step skippable: name]
+    C --> D[Import a to-do list, simulated sources]
+    D --> E[Time zone: day, evening, or night]
+    E --> F[List editor: category name plus items, add more lists, or paste many lines]
+    F --> G{Bottom buttons}
+    G -->|Create Manually| H[Lists kept as written, untitled list becomes Unsorted]
+    G -->|Sort it!| I[Titled lists kept, untitled items auto-categorized]
+    I --> J[Review screen: rename, merge, move]
+    J -->|Unsure items| K[Placed in Unsorted]
+    J --> L[Looks good]
+    H --> M[Hub]
+    L --> M
 ```
 
 ### Main visit
@@ -80,7 +81,7 @@ These are copies of the diagrams in [flows.md](flows.md), since GitHub can't inc
 
 ## Status
 
-First iteration. Working: first visit (build or dump, with review screen), hub with tabs and collapsible lists, "+ Add", swipe or tap to complete with undo, chain "Next step", daily reset on return, History & Stats with a pie chart, and the three ordering modes in Settings. Not yet: dragging individual items (only lists reorder, in "My own order" mode), weekend lists, notifications, sync.
+First iteration. Working: first visit (skippable setup for name, import, and time zone, then a list editor with Sort it! or Create Manually and a review screen), hub with tabs and collapsible lists, "+ Add", swipe or tap to complete with undo, chain "Next step", daily reset on return, History & Stats with a pie chart, and the three ordering modes in Settings. Importing is simulated (made-up tasks, no real accounts). Not yet: dragging individual items (only lists reorder, in "My own order" mode), weekend lists, notifications, sync.
 
 To replay the first visit, open the menu, then Settings, then "Erase everything".
 

@@ -36,6 +36,13 @@ export interface Completion {
   steps: string[];
 }
 
+export interface Profile {
+  name: string;
+  /** IANA zone like "America/Chicago"; empty means use the device's zone */
+  timeZone: string;
+  setupDone: boolean;
+}
+
 export interface AppState {
   version: 1;
   onboarded: boolean;
@@ -44,6 +51,7 @@ export interface AppState {
   items: Item[];
   log: Completion[];
   lastOpened: string;
+  profile: Profile;
 }
 
 export interface Group {

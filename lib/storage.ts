@@ -1,4 +1,4 @@
-import type { AppState } from "./types";
+import type { AppState, Profile } from "./types";
 import { todayStr } from "./dates";
 
 const KEY = "dont-forget:v1";
@@ -43,7 +43,7 @@ export function getRaw(): string | null {
 export const getFailed = () => failed;
 
 export function freshState(): AppState {
-  return { version: 1, onboarded: false, mode: "time", categories: [], items: [], log: [], lastOpened: todayStr() };
+  return { version: 1, onboarded: false, mode: "time", categories: [], items: [], log: [], lastOpened: todayStr(), profile: { name: "", timeZone: "", setupDone: false } };
 }
 
 function valid(s: unknown): s is AppState {
@@ -51,11 +51,17 @@ function valid(s: unknown): s is AppState {
   return !!x && x.version === 1 && Array.isArray(x.categories) && Array.isArray(x.items) && Array.isArray(x.log);
 }
 
+/** Data saved before the setup step existed has no profile; those users skip setup. */
+function normalize(s: AppState): AppState {
+  const defaults: Profile = { name: "", timeZone: "", setupDone: true };
+  return { ...s, profile: { ...defaults, ...s.profile } };
+}
+
 function tryParse(raw: string | null): AppState | null {
   if (!raw) return null;
   try {
     const s = JSON.parse(raw);
-    return valid(s) ? s : null;
+    return valid(s) ? normalize(s) : null;
   } catch {
     return null;
   }

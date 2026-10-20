@@ -6,9 +6,11 @@ This doc adds the steps, states, and errors the original brainstorm didn't cover
 
 ## Steps (flows)
 
-1. **First visit:** two cards, "Build my own" vs "Dump everything". No account, no permissions, no setup questions before the first save.
-   - *Build my own* opens a notes-style page with a faint suggested title ("Leaving the house") and an "+ Add" button for items.
-   - *Dump everything* opens one big text box whose placeholder rotates through examples ("Keys, wallet, phone before leaving"), then a **review screen** where the user can rename, merge, or move auto-sorted items before confirming. A line that ends in ":" or names a known category is treated as a heading. Items we can't place go to "Unsorted" instead of being guessed. This is the only extra screen, and it guards against bad auto-categorization.
+1. **First visit:** onboarding comes first, before the user touches the tool. No account and no permissions are required, and every step can be skipped ("Skip" on each step, "Skip setup" at the top).
+   - **Setup:** the app title and a one-line description sit above step 1. (1) *Name*: used for a greeting on the hub. (2) *Import a to-do list*: pick a source (Apple Reminders, Google Tasks, Todoist) and its tasks are auto-filed into lists. The sources are simulated in this prototype and import made-up tasks. (3) *Time zone*: "Use my location" reads only the device's time zone, or pick one by hand, so the app knows when it's day (5am-5pm), evening (5-10pm), or night (10pm-5am) and can order lists to match. Name and time zone can be changed later in Settings.
+   - **List editor:** opens in a notes style. Each list has a faint "Enter category name" and its own "+ Add" item box. "+ New list" adds more lists, so things can be categorized immediately, and a trash can deletes a list. Pasting many lines into an item box splits them into items. Placeholder suggestions ("e.g. Keys, wallet, phone before leaving") only appear on the line the user is typing in; other lines just say "Add an item".
+   - **Two buttons at the bottom:** **Sort it!** keeps titled lists as they are and auto-categorizes the items in untitled lists, then shows a **review screen** to rename, merge, or move items before confirming. **Create Manually** keeps the lists exactly as written (an untitled list becomes "Unsorted") and goes straight to the hub. Short descriptions of both sit at the top of the editor.
+   - Auto-sort treats a line that ends in ":" or names a known category as a heading. Items it can't place go to "Unsorted" instead of being guessed.
 2. **Ordering mode picker** (Settings, with a gentle prompt after first use): Time-of-day / Date-priority / Manual (drag). Manual is the "off" state.
 3. **Item creation:** type a title, then optionally set category, repeat behavior, date/time, and context tags (leaving, arriving, night out, weekend). Defaults come from the category.
 4. **Repeat behavior**, chosen per item or category:
@@ -85,7 +87,7 @@ Three comparable tools were reviewed for their first screen, what they ask for, 
 
 What we took from it:
 1. No account and no setup before the first save.
-2. Offer the two paths at the capture step. None of the three has "dump everything and sort it".
+2. Offer the two paths (Sort it! and Create Manually) at the capture step. None of the three has "dump everything and sort it".
 3. Rotating example prompts in the dump box teach the input style without an extra screen.
 4. Show the first auto-sort as labeled, editable groups, and never show empty category tiles.
 5. Defer notifications (out of v1 anyway).

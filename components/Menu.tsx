@@ -5,6 +5,7 @@ import type { AppState, Mode } from "@/lib/types";
 import { paletteAt } from "@/lib/style";
 import { restoreFromHistory } from "@/lib/actions";
 import { clearAll, exportData } from "@/lib/storage";
+import { cityOf, deviceZone, zoneOptions } from "@/lib/timezones";
 
 type View = "menu" | "history" | "settings";
 type Range = "today" | "week" | "all";
@@ -161,6 +162,25 @@ function Settings({ state, update }: { state: AppState; update: (fn: (s: AppStat
 
   return (
     <div className="drawer-body">
+      <label className="field">
+        <span>Your name</span>
+        <input
+          value={state.profile.name}
+          onChange={(e) => update((s) => ({ ...s, profile: { ...s.profile, name: e.target.value } }))}
+          placeholder="Optional"
+        />
+      </label>
+      <label className="field">
+        <span>Time zone</span>
+        <select value={state.profile.timeZone} onChange={(e) => update((s) => ({ ...s, profile: { ...s.profile, timeZone: e.target.value } }))}>
+          <option value="">Device default ({cityOf(deviceZone()) || "unknown"})</option>
+          {zoneOptions(state.profile.timeZone).map((z) => (
+            <option key={z} value={z}>
+              {cityOf(z)}
+            </option>
+          ))}
+        </select>
+      </label>
       <div role="radiogroup" aria-label="Order lists" className="radio-list">
         {MODES.map((m) => (
           <button key={m.id} role="radio" aria-checked={state.mode === m.id} className={state.mode === m.id ? "on" : ""} onClick={() => update((s) => ({ ...s, mode: m.id }))}>

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { AppState, Category, Item } from "@/lib/types";
 import { paletteAt } from "@/lib/style";
 import { dueInfo, todayStr } from "@/lib/dates";
-import { orderCategories, orderItems, orderLabel } from "@/lib/order";
+import { greeting, orderCategories, orderItems, orderLabel } from "@/lib/order";
 import {
   addItem, addNextStep, completeItem, moveCategory, toggleCollapsed, uncheckDaily, undoComplete,
 } from "@/lib/actions";
@@ -40,7 +40,9 @@ export default function Hub({ state, update }: { state: AppState; update: Update
   }, [toast]);
 
   const today = todayStr();
-  const ordered = orderCategories(state.categories, state.items, state.mode, now);
+  const tz = state.profile.timeZone || undefined;
+  const ordered = orderCategories(state.categories, state.items, state.mode, now, tz);
+  const hello = greeting(state.profile.name, now, tz);
   const visible = tab === "hub" ? ordered : ordered.filter((c) => c.id === tab);
   const openCount = (c: Category) => state.items.filter((i) => i.categoryId === c.id && !(i.repeat === "daily" && i.doneOn)).length;
 
@@ -63,8 +65,9 @@ export default function Hub({ state, update }: { state: AppState; update: Update
           &#9776;
         </button>
         <h1>Don&rsquo;t Forget&hellip;!</h1>
-        <span className="mode faint small">{orderLabel(state.mode, now)}</span>
+        <span className="mode faint small">{orderLabel(state.mode, now, tz)}</span>
       </header>
+      {hello && <p className="faint hello">{hello}</p>}
 
       <nav className="tabs" aria-label="Lists">
         <button className={tab === "hub" ? "tab on" : "tab"} onClick={() => setTab("hub")}>

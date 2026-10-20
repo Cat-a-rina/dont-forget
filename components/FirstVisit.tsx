@@ -1,23 +1,27 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { AppState, Group } from "@/lib/types";
 import { parseDump, UNSORTED } from "@/lib/categorize";
 import { seed, uid } from "@/lib/actions";
 import { todayStr } from "@/lib/dates";
 
-type Step = "choose" | "build" | "dump" | "review";
 type Update = (fn: (s: AppState) => AppState) => void;
 
-const SUGGESTED_TITLE = "Leaving the house";
-
-const DUMP_EXAMPLES = [
+const EXAMPLES = [
   "Keys, wallet, phone before leaving",
   "RSVP for brother's wedding",
   "Permission slip due Friday",
   "change car oil",
   "reach out to a friend about brunch",
 ];
+
+interface DraftList {
+  key: string;
+  title: string;
+  items: string[];
+  draft: string;
+}
 
 interface ReviewItem {
   id: string;
@@ -29,151 +33,151 @@ interface ReviewGroup {
   items: ReviewItem[];
 }
 
-export default function FirstVisit({ update }: { update: Update }) {
-  const [step, setStep] = useState<Step>("choose");
-  const [dump, setDump] = useState("");
-  const [review, setReview] = useState<ReviewGroup[]>([]);
+const newList = (): DraftList => ({ key: uid(), title: "", items: [], draft: "" });
+
+/** Pending text in an add-item box counts as an item when the user moves on. */
+function flushed(lists: DraftList[]): DraftList[] {
+  return lists.map((l) => (l.draft.trim() ? { ...l, items: [...l.items, l.draft.trim()], draft: "" } : l));
+}
+
+export default function FirstVisit({ state, update }: { state: AppState; update: Update }) {
+  const [lists, setLists] = useState<DraftList[]>(() => [newList()]);
+  const [review, setReview] = useState<ReviewGroup[] | null>(null);
+  const [n, setN] = useState(0);
+  const [focused, setFocused] = useState<string | null>(null);
+
+  useEffect(() => {
+    const t = setInterval(() => setN((x) => x + 1), 3000);
+    return () => clearInterval(t);
+  }, []);
 
   const finish = (groups: Group[]) => update((s) => seed(s, groups, todayStr()));
+  const imported = state.items.length;
+  const hasItems = imported > 0 || lists.some((l) => l.items.length > 0 || l.draft.trim());
+  const patch = (key: string, p: Partial<DraftList>) => setLists((ls) => ls.map((l) => (l.key === key ? { ...l, ...p } : l)));
 
-  if (step === "build") {
-    return <Build onBack={() => setStep("choose")} onDone={finish} />;
-  }
+  // Titled lists keep their title. Items in untitled lists are filed by the sorter.
+  const sort = () => {
+    const groups: Group[] = [];
+    for (const l of flushed(lists)) {
+      if (l.items.length === 0) continue;
+      if (l.title.trim()) groups.push({ name: l.title.trim(), context: null, items: l.items });
+      else groups.push(...parseDump(l.items.join("\n")));
+    }
+    if (groups.length === 0) return finish([]);
+    setLists(flushed(lists));
+    setReview(groups.map((g) => ({ key: uid(), name: g.name, items: g.items.map((title) => ({ id: uid(), title })) })));
+  };
 
-  if (step === "dump") {
-    return (
-      <Dump
-        text={dump}
-        setText={setDump}
-        onBack={() => setStep("choose")}
-        onSort={() => {
-          const groups = parseDump(dump);
-          setReview(groups.map((g) => ({ key: uid(), name: g.name, items: g.items.map((title) => ({ id: uid(), title })) })));
-          setStep("review");
-        }}
-      />
-    );
-  }
+  // Lists are kept exactly as written. An untitled list becomes "Unsorted".
+  const createManually = () =>
+    finish(flushed(lists).map((l) => ({ name: l.title.trim() || UNSORTED, context: null, items: l.items })));
 
-  if (step === "review") {
+  if (review) {
     return (
       <Review
         groups={review}
-        setGroups={setReview}
-        onBack={() => setStep("dump")}
+        setGroups={(g) => setReview(g)}
+        onBack={() => setReview(null)}
         onConfirm={() => finish(review.map((g) => ({ name: g.name, context: null, items: g.items.map((i) => i.title) })))}
       />
     );
   }
 
   return (
-    <main className="screen first">
-      <h1 className="brand">Don&rsquo;t Forget&hellip;!</h1>
-      <div className="choices">
-        <button className="choice" onClick={() => setStep("build")}>
-          <strong>Build my own</strong>
-          <span>Start with one list.</span>
-        </button>
-        <button className="choice" onClick={() => setStep("dump")}>
-          <strong>Dump everything</strong>
-          <span>Type it all out. We&rsquo;ll sort it.</span>
-        </button>
-      </div>
-    </main>
-  );
-}
+    <main className="screen write">
+      <header className="intro">
+        <h1 className="brand">Don&rsquo;t Forget&hellip;!</h1>
+        <p className="faint">
+          One place for the things you&rsquo;d normally forget: checklists, errands, deadlines. It reorders itself to fit your day.
+        </p>
+        <p className="routes faint">
+          <strong>Sort it!</strong> Write everything in one go. We file it into lists for you, and you review before it&rsquo;s saved.
+        </p>
+        <p className="routes faint">
+          <strong>Create Manually</strong> Make your own lists and titles. Nothing gets moved or renamed.
+        </p>
+      </header>
 
-function Build({ onBack, onDone }: { onBack: () => void; onDone: (g: Group[]) => void }) {
-  const [title, setTitle] = useState("");
-  const [items, setItems] = useState<string[]>([]);
-  const [draft, setDraft] = useState("");
+      {imported > 0 && <p className="faint small">{imported} imported tasks are already filed into your lists.</p>}
 
-  const addDraft = () => {
-    const t = draft.trim();
-    if (t) setItems((prev) => [...prev, t]);
-    setDraft("");
-    return t ? [...items, t] : items;
-  };
-
-  return (
-    <main className="screen">
-      <button className="link" onClick={onBack}>
-        &lsaquo; Back
-      </button>
-      <input
-        className="title-input"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder={SUGGESTED_TITLE}
-        aria-label="List title"
-        autoFocus
-      />
-      <ul className="plain-list">
-        {items.map((t, i) => (
-          <li key={i} className="plain-row">
-            <span>{t}</span>
-            <button className="icon-btn" aria-label={`Remove ${t}`} onClick={() => setItems(items.filter((_, j) => j !== i))}>
-              &times;
+      {lists.map((l) => (
+        <section key={l.key} className="draft-list">
+          <div className="title-row">
+            <input
+              className="title-input"
+              value={l.title}
+              onChange={(e) => patch(l.key, { title: e.target.value })}
+              placeholder="Enter category name"
+              aria-label="Category name"
+            />
+            <button
+              className="icon-btn trash"
+              aria-label="Delete list"
+              title="Delete list"
+              onClick={() => setLists((ls) => (ls.length > 1 ? ls.filter((x) => x.key !== l.key) : [newList()]))}
+              disabled={lists.length === 1 && !l.title && l.items.length === 0 && !l.draft}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M3 6h18" />
+                <path d="M8 6V4h8v2" />
+                <path d="M6 6l1 14h10l1-14" />
+                <path d="M10 11v6M14 11v6" />
+              </svg>
             </button>
-          </li>
-        ))}
-      </ul>
-      <form
-        className="add-row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          addDraft();
-        }}
-      >
-        <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Add an item" aria-label="New item" />
-        <button type="submit" className="btn ghost" disabled={!draft.trim()}>
-          + Add
-        </button>
-      </form>
-      <div className="footer-bar">
-        <button
-          className="btn primary"
-          disabled={!draft.trim() && items.length === 0}
-          onClick={() => {
-            const all = addDraft();
-            onDone([{ name: title.trim() || SUGGESTED_TITLE, context: null, items: all }]);
-          }}
-        >
-          Done
-        </button>
-      </div>
-    </main>
-  );
-}
+          </div>
+          <ul className="plain-list">
+            {l.items.map((t, i) => (
+              <li key={i} className="plain-row">
+                <span>{t}</span>
+                <button className="icon-btn" aria-label={`Remove ${t}`} onClick={() => patch(l.key, { items: l.items.filter((_, j) => j !== i) })}>
+                  &times;
+                </button>
+              </li>
+            ))}
+          </ul>
+          <form
+            className="add-row"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (l.draft.trim()) patch(l.key, { items: [...l.items, l.draft.trim()], draft: "" });
+            }}
+          >
+            <input
+              value={l.draft}
+              onChange={(e) => patch(l.key, { draft: e.target.value })}
+              onPaste={(e) => {
+                const text = e.clipboardData.getData("text");
+                if (!/\r?\n/.test(text)) return;
+                e.preventDefault();
+                const lines = text.split(/\r?\n/).map((x) => x.replace(/^[\s\-*•]+/, "").trim()).filter(Boolean);
+                patch(l.key, { items: [...l.items, ...lines] });
+              }}
+              onFocus={() => setFocused(l.key)}
+              onBlur={() => setFocused((f) => (f === l.key ? null : f))}
+              placeholder={focused === l.key ? `e.g. ${EXAMPLES[n % EXAMPLES.length]}` : "Add an item"}
+              aria-label="New item"
+            />
+            <button type="submit" className="btn ghost" disabled={!l.draft.trim()}>
+              + Add
+            </button>
+          </form>
+        </section>
+      ))}
 
-function Dump({ text, setText, onBack, onSort }: { text: string; setText: (t: string) => void; onBack: () => void; onSort: () => void }) {
-  const [n, setN] = useState(0);
-  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    timer.current = setInterval(() => setN((x) => x + 1), 3000);
-    return () => {
-      if (timer.current) clearInterval(timer.current);
-    };
-  }, []);
-
-  return (
-    <main className="screen">
-      <button className="link" onClick={onBack}>
-        &lsaquo; Back
+      <button className="link new-list" onClick={() => setLists((ls) => [...flushed(ls), newList()])}>
+        + New list
       </button>
-      <textarea
-        className="dump"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder={DUMP_EXAMPLES[n % DUMP_EXAMPLES.length]}
-        aria-label="Everything you don't want to forget"
-        autoFocus
-      />
-      <div className="footer-bar">
-        <button className="btn primary" disabled={!text.trim()} onClick={onSort}>
-          Sort it
-        </button>
+
+      <div className="footer-bar stack">
+        <div className="footer-buttons">
+          <button className="btn ghost" disabled={!hasItems} onClick={createManually}>
+            Create Manually
+          </button>
+          <button className="btn primary" disabled={!hasItems} onClick={sort}>
+            Sort it!
+          </button>
+        </div>
       </div>
     </main>
   );

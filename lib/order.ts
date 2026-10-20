@@ -1,21 +1,46 @@
 import type { Category, Item, Mode } from "./types";
 
-export function isEvening(now: Date): boolean {
-  const h = now.getHours();
-  return h >= 17 || h < 5;
+export type Phase = "day" | "evening" | "night";
+
+export function hourIn(now: Date, timeZone?: string): number {
+  if (timeZone) {
+    try {
+      const h = new Intl.DateTimeFormat("en-US", { hour: "numeric", hourCycle: "h23", timeZone }).format(now);
+      return Number(h) % 24;
+    } catch {
+      /* fall through to the device clock */
+    }
+  }
+  return now.getHours();
 }
 
-export function orderLabel(mode: Mode, now: Date): string {
+export function phaseOf(now: Date, timeZone?: string): Phase {
+  const h = hourIn(now, timeZone);
+  if (h >= 22 || h < 5) return "night";
+  if (h >= 17) return "evening";
+  return "day";
+}
+
+export function orderLabel(mode: Mode, now: Date, timeZone?: string): string {
   if (mode === "manual") return "My order";
   if (mode === "date") return "By date";
-  return isEvening(now) ? "Evening" : "Daytime";
+  const p = phaseOf(now, timeZone);
+  return p === "day" ? "Daytime" : p === "evening" ? "Evening" : "Night";
+}
+
+export function greeting(name: string, now: Date, timeZone?: string): string {
+  if (!name.trim()) return "";
+  const h = hourIn(now, timeZone);
+  const p = phaseOf(now, timeZone);
+  if (p === "night") return `Hi, ${name.trim()}`;
+  return `Good ${p === "evening" ? "evening" : h < 12 ? "morning" : "afternoon"}, ${name.trim()}`;
 }
 
 /** Arrays sort stably, so ties keep the user's own category order. */
-export function orderCategories(cats: Category[], items: Item[], mode: Mode, now: Date): Category[] {
+export function orderCategories(cats: Category[], items: Item[], mode: Mode, now: Date, timeZone?: string): Category[] {
   if (mode === "manual") return cats;
   if (mode === "time") {
-    const evening = isEvening(now);
+    const evening = phaseOf(now, timeZone) !== "day";
     const rank = (c: Category) => {
       if (c.context === "leaving") return evening ? 2 : 0;
       if (c.context === "arriving") return evening ? 0 : 2;

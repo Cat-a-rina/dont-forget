@@ -1,5 +1,5 @@
 import type { AppState, Category, Completion, Context, Group, Item, Repeat } from "./types";
-import { contextFor } from "./categorize";
+import { contextFor, parseDump } from "./categorize";
 import { daysBetween } from "./dates";
 
 export const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -14,8 +14,8 @@ export function defaultRepeat(cat: Category | undefined): Repeat {
 
 /** Merges groups by name (case-insensitive), drops empty ones, and finishes onboarding. */
 export function seed(state: AppState, groups: Group[], today: string): AppState {
-  const categories: Category[] = [];
-  const items: Item[] = [];
+  const categories: Category[] = [...state.categories];
+  const items: Item[] = [...state.items];
   let t = Date.now();
   for (const g of groups) {
     const name = g.name.trim();
@@ -130,4 +130,20 @@ export function moveCategory(state: AppState, fromId: string, toId: string): App
   const [moved] = cats.splice(from, 1);
   cats.splice(to, 0, moved);
   return { ...state, categories: cats };
+}
+
+/** Files imported task titles into lists: matching lists are reused, the rest go to new lists or "Unsorted". */
+export function importItems(state: AppState, titles: string[]): AppState {
+  let next = state;
+  for (const g of parseDump(titles.join("\n"), state.categories.map((c) => c.name))) {
+    for (const title of g.items) {
+      if (next.items.some((i) => i.title.toLowerCase() === title.toLowerCase())) continue;
+      const existing = next.categories.find((c) => c.name.toLowerCase() === g.name.toLowerCase());
+      next = addItem(next, {
+        title, categoryId: existing?.id ?? null, newCategory: existing ? "" : g.name,
+        repeat: defaultRepeat(existing ?? { context: contextFor(g.name) } as Category), due: null,
+      });
+    }
+  }
+  return next;
 }
