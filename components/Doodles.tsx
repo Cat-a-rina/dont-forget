@@ -93,7 +93,31 @@ export default function Doodle({ name, size = 36, className }: { name: DoodleNam
   );
 }
 
-/** A border of doodles, like the row along the top of a printed to-do page. */
+const EDGE: { n: DoodleName; size: number; small?: boolean }[] = [
+  { n: "pumpkin", size: 46 },
+  { n: "flower", size: 40, small: true },
+  { n: "mushroom", size: 48 },
+  { n: "smiley", size: 42 },
+  { n: "sparkle", size: 34, small: true },
+  { n: "leaf", size: 46 },
+  { n: "bean", size: 50 },
+  { n: "heart", size: 36, small: true },
+  { n: "flower", size: 44 },
+  { n: "pumpkin", size: 44, small: true },
+];
+
+/** A border of little drawings along the bottom edge of the screen. Decoration only. */
+export function BottomEdge() {
+  return (
+    <div className="bottom-edge" aria-hidden>
+      {EDGE.map((e, i) => (
+        <Doodle key={i} name={e.n} size={e.size} className={`doodle${e.small ? " hide-sm" : ""}`} />
+      ))}
+    </div>
+  );
+}
+
+/** A border of doodles across the top of a page, like the row on a printed to-do page. */
 export function DoodleRow({ names, className = "" }: { names: DoodleName[]; className?: string }) {
   return (
     <div className={`doodle-row ${className}`} aria-hidden>

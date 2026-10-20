@@ -6,7 +6,7 @@ import { rangeStart, summarize, type Range } from "@/lib/stats";
 import Pie, { Legend } from "./Pie";
 import CompletedList from "./CompletedList";
 import AppearancePicker from "./AppearancePicker";
-import { restoreFromHistory } from "@/lib/actions";
+import { restoreCategory, restoreFromHistory } from "@/lib/actions";
 import { clearAll, exportData } from "@/lib/storage";
 import { cityOf, deviceZone, zoneOptions } from "@/lib/timezones";
 
@@ -123,6 +123,23 @@ function Settings({ state, update }: { state: AppState; update: (fn: (s: AppStat
           </button>
         ))}
       </div>
+      {state.categories.some((c) => c.archived) && (
+        <div className="field">
+          <span>Cleared lists</span>
+          <ul className="plain-list">
+            {state.categories
+              .filter((c) => c.archived)
+              .map((c) => (
+                <li key={c.id} className="plain-row">
+                  <span className="grow">{c.name}</span>
+                  <button className="btn ghost" onClick={() => update((s) => restoreCategory(s, c.id))}>
+                    Bring back
+                  </button>
+                </li>
+              ))}
+          </ul>
+        </div>
+      )}
       <button className="btn ghost" onClick={() => update((s) => ({ ...s, profile: { ...s.profile, setupDone: false } }))}>
         Set up again
       </button>

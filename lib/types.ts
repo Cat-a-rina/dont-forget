@@ -11,6 +11,8 @@ export interface Category {
   style: number;
   context: Context;
   collapsed: boolean;
+  /** cleared off the board; hidden but can be brought back from Settings */
+  archived?: boolean;
 }
 
 export interface Item {

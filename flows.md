@@ -6,21 +6,22 @@ Diagrams for the app's main flows. Source of truth for behavior is [brainstormin
 
 ```mermaid
 flowchart TD
-    A([Open app, no saved data]) --> B[Title and short description]
-    B --> C[Setup, every step skippable: name]
-    C --> D[Import a to-do list, simulated sources]
-    D --> D2[Preview: rename groups, drag items between groups, confirm]
-    D2 --> E
-    E[Time zone: day, evening, or night]
-    E --> F[List editor: category name plus items, add more lists, or paste many lines]
+    A([Open app, no saved data]) --> B[One screen: steps side by side, the current step bright, the rest faded]
+    B --> C[1 Name, optional]
+    C --> D[2 Import a to-do list, simulated sources, optional]
+    D --> D2[Preview: rename groups, drag items, Back or Add]
+    D2 --> E[3 Time zone: day, evening, or night]
+    D --> E
+    E --> F[4 Start your lists: category name plus items, suggested lists, paste many lines]
     F --> G{Bottom buttons}
     G -->|Create Manually| H[Lists kept as written, untitled list becomes Unsorted]
     G -->|Sort it!| I[Titled lists kept, untitled items auto-categorized]
-    I --> J[Review screen: rename, merge, drag items]
+    I --> J[Preview screen: rename, merge, drag items]
     J -->|Unsure items| K[Placed in Unsorted]
     J --> L[Looks good]
     H --> M[Hub]
     L --> M
+    M --> N[Floating card by the menu: pick how lists are ordered]
 ```
 
 ## 2. Main visit

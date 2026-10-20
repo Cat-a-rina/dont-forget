@@ -7,21 +7,21 @@ import Confetti, { makePieces, type Piece } from "./Confetti";
 import { dueInfo, todayStr } from "@/lib/dates";
 import { greeting, orderCategories, orderItems, orderLabel } from "@/lib/order";
 import {
-  addItem, addList, addNextStep, defaultRepeat, importGroups, renameCategory, renameItem, restoreFromHistory, completeItem, moveCategory, moveItem, toggleCollapsed, uncheckDaily, undoComplete,
+  addItem, addList, addNextStep, archiveCategory, defaultRepeat, deleteItem, restoreCategory, updateItem, importGroups, renameCategory, renameItem, restoreFromHistory, completeItem, moveCategory, moveItem, toggleCollapsed, uncheckDaily, undoComplete,
 } from "@/lib/actions";
 import AddSheet, { type AddInput } from "./AddSheet";
 import Menu from "./Menu";
 import AutoSortSheet from "./AutoSortSheet";
 import NewListSheet from "./NewListSheet";
 import Progress from "./Progress";
-import Doodle, { DoodleRow, type DoodleName } from "./Doodles";
+import Doodle, { BottomEdge, type DoodleName } from "./Doodles";
+import ModePicker from "./ModePicker";
 import CompletedList from "./CompletedList";
 import { rangeStart, summarize } from "@/lib/stats";
 
 type Update = (fn: (s: AppState) => AppState) => void;
 
-// Icons that sit on the corners of each list sheet (paper themes with the Sheet layout).
-const CORNER_TL: DoodleName[] = ["flower", "sparkle", "leaf", "heart"];
+// A small icon sits in the bottom corner of each list sheet (Sheet layout).
 const CORNER_BR: DoodleName[] = ["bean", "pumpkin", "mushroom", "smiley"];
 
 interface Toast {
@@ -42,9 +42,12 @@ export default function Hub({ state, update }: { state: AppState; update: Update
   const toggleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [party, setParty] = useState<{ id: number; pieces: Piece[] } | null>(null);
   const [welcomePieces] = useState(() => makePieces(44));
+  const [editItem, setEditItem] = useState<Item | null>(null);
+  const [modeOpen, setModeOpen] = useState(false);
   const [sorting, setSorting] = useState(false);
   const [newList, setNewList] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
+  const [clearedNote, setClearedNote] = useState<{ id: string; name: string } | null>(null);
   const [now, setNow] = useState(() => new Date());
   // What is being dragged: a whole list (manual mode) or a single item between lists.
   const drag = useRef<{ kind: "cat" | "item"; id: string } | null>(null);
@@ -54,6 +57,12 @@ export default function Hub({ state, update }: { state: AppState; update: Update
     const t = setInterval(() => setNow(new Date()), 60000);
     return () => clearInterval(t);
   }, []);
+
+  useEffect(() => {
+    if (!clearedNote) return;
+    const t = setTimeout(() => setClearedNote(null), 7000);
+    return () => clearTimeout(t);
+  }, [clearedNote]);
 
   useEffect(() => {
     if (!party) return;
@@ -68,15 +77,28 @@ export default function Hub({ state, update }: { state: AppState; update: Update
   }, [toast]);
 
   const today = todayStr();
+  // How many items need attention: overdue, or due today and not yet done.
+  const urgency = state.items.reduce(
+    (acc, i) => {
+      if (!i.due || (i.repeat === "daily" && i.doneOn === today)) return acc;
+      const st = dueInfo(i.due, today).state;
+      if (st === "overdue") acc.overdue += 1;
+      else if (st === "today") acc.today += 1;
+      return acc;
+    },
+    { overdue: 0, today: 0 },
+  );
   const tz = state.profile.timeZone || undefined;
   const dayStart = rangeStart("today", now.getTime());
-  const ordered = orderCategories(state.categories, state.items, state.mode, now, tz);
+  // Lists that were cleared off the board stay out of sight (they can be brought back in Settings).
+  const active = state.categories.filter((c) => !c.archived);
+  const ordered = orderCategories(active, state.items, state.mode, now, tz);
   const hello = greeting(state.profile.name, now, tz);
   const visible = tab === "hub" ? ordered : ordered.filter((c) => c.id === tab);
   const openCount = (c: Category) => state.items.filter((i) => i.categoryId === c.id && !(i.repeat === "daily" && i.doneOn)).length;
 
   const allDone =
-    state.categories.length > 0 && state.categories.every((c) => openCount(c) === 0) && state.log.some((l) => l.at >= dayStart);
+    active.length > 0 && active.every((c) => openCount(c) === 0) && state.log.some((l) => l.at >= dayStart);
 
   const complete = (item: Item) => {
     const result = completeItem(state, item.id, today);
@@ -85,7 +107,7 @@ export default function Hub({ state, update }: { state: AppState; update: Update
     const openIn = (s: AppState, id: string) => s.items.filter((i) => i.categoryId === id && !(i.repeat === "daily" && i.doneOn)).length;
     const cat = state.categories.find((c) => c.id === item.categoryId);
     const cleared = !!cat && openIn(state, cat.id) > 0 && openIn(result.state, cat.id) === 0;
-    const everything = cleared && state.categories.every((c) => openIn(result.state, c.id) === 0);
+    const everything = cleared && active.every((c) => openIn(result.state, c.id) === 0);
     if (cleared) setParty({ id: result.completion.at, pieces: makePieces(everything ? 80 : 40) });
     update(() => result.state);
     setToast({ message: cleared ? (everything ? "Everything is done!" : `${cat.name} is all done!`) : undefined, id: result.completion.at, snapshot: result.snapshot, completionId: result.completion.id, index: result.index, prompt: false });
@@ -123,10 +145,26 @@ export default function Hub({ state, update }: { state: AppState; update: Update
 
   return (
     <main className="screen hub">
+      <BottomEdge />
       <header className="topbar">
-        <button className="icon-btn" aria-label="Menu" onClick={() => setMenu(true)}>
-          &#9776;
-        </button>
+        <div className="menu-wrap">
+          <button className="icon-btn" aria-label="Menu" onClick={() => setMenu(true)}>
+            &#9776;
+          </button>
+          {!state.profile.welcomed && (
+            <div className="callout" role="dialog" aria-label="Welcome">
+              <Confetti pieces={welcomePieces} />
+              <strong>You&rsquo;re all set{state.profile.name ? `, ${state.profile.name}` : ""}!</strong>
+              <p className="faint small">
+                Your lists can be ordered three ways. Pick one now, or change it any time from this menu (&#9776;) under Settings.
+              </p>
+              <ModePicker mode={state.mode} compact onPick={(m) => update((s) => ({ ...s, mode: m }))} />
+              <button className="btn primary" onClick={() => update((s) => ({ ...s, profile: { ...s.profile, welcomed: true } }))}>
+                Got it
+              </button>
+            </div>
+          )}
+        </div>
         <h1>Don&rsquo;t Forget&hellip;!</h1>
         <div className="add-wrap">
           <button className="btn primary add-btn" aria-haspopup="menu" aria-expanded={addMenu} onClick={() => setAddMenu((v) => !v)}>
@@ -183,22 +221,32 @@ export default function Hub({ state, update }: { state: AppState; update: Update
       </header>
       <div className="meta">
         <span className="hello">{hello}</span>
-        <span className="pill">{orderLabel(state.mode, now, tz)}</span>
-      </div>
-      <DoodleRow className="in-sheet" names={["pumpkin", "flower", "smiley", "mushroom", "sparkle", "leaf"]} />
-
-      {!state.profile.welcomed && (
-        <div className="banner welcome" role="status">
-          <Confetti pieces={welcomePieces} />
-          <div>
-            <strong>You&rsquo;re all set{state.profile.name ? `, ${state.profile.name}` : ""}!</strong>
-            <span className="faint small">Check items off, and finish a whole list to see what happens.</span>
-          </div>
-          <button className="btn primary" onClick={() => update((s) => ({ ...s, profile: { ...s.profile, welcomed: true } }))}>
-            Got it
+        {(urgency.overdue > 0 || urgency.today > 0) && (
+          <span className="urgent-summary" title="Items that are overdue or due today">
+            <span aria-hidden>!</span>{" "}
+            {[urgency.overdue ? `${urgency.overdue} overdue` : "", urgency.today ? `${urgency.today} due today` : ""].filter(Boolean).join(" · ")}
+          </span>
+        )}
+        <div className="mode-wrap">
+          <button
+            className="pill mode-pill"
+            aria-haspopup="dialog"
+            aria-expanded={modeOpen}
+            title="Change how your lists are ordered"
+            onClick={() => setModeOpen((v) => !v)}
+          >
+            {state.mode === "time" ? `By time of day · ${orderLabel("time", now, tz)}` : state.mode === "date" ? "By date" : "My own order"} &#9662;
           </button>
+          {modeOpen && (
+            <>
+              <div className="menu-scrim" onClick={() => setModeOpen(false)} />
+              <div className="mode-pop" role="dialog" aria-label="Order your lists" onKeyDown={(e) => e.key === "Escape" && setModeOpen(false)}>
+                <ModePicker mode={state.mode} onPick={(m) => update((s) => ({ ...s, mode: m }))} />
+              </div>
+            </>
+          )}
         </div>
-      )}
+      </div>
 
       <nav className="tabs" aria-label="Lists">
         <button className={tab === "hub" ? "tab on" : "tab"} onClick={() => setTab("hub")}>
@@ -261,6 +309,9 @@ export default function Hub({ state, update }: { state: AppState; update: Update
           const doneToday = state.log.filter((l) => l.categoryId === c.id && l.at >= dayStart).length;
           const pct = left + doneToday > 0 ? Math.round((doneToday / (left + doneToday)) * 100) : 0;
           const cleared = left === 0 && doneToday > 0;
+          const urgent = items.filter(
+            (i) => i.due && !(i.repeat === "daily" && i.doneOn === today) && ["overdue", "today"].includes(dueInfo(i.due, today).state),
+          ).length;
           return (
             <section
               key={c.id}
@@ -288,8 +339,7 @@ export default function Hub({ state, update }: { state: AppState; update: Update
                 setOver(null);
               }}
             >
-              <Doodle name={CORNER_TL[c.style % CORNER_TL.length]} size={40} className="doodle in-sheet corner-tl" />
-              <Doodle name={CORNER_BR[c.style % CORNER_BR.length]} size={54} className="doodle in-sheet corner-br" />
+              <Doodle name={CORNER_BR[c.style % CORNER_BR.length]} size={34} className="doodle in-sheet side-doodle" />
               {editingCat === c.id ? (
                 <div className="section-head editing">
                   <span className="badge" aria-hidden>
@@ -337,7 +387,7 @@ export default function Hub({ state, update }: { state: AppState; update: Update
                     }
                     if (!e.altKey || state.mode !== "manual" || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
                     e.preventDefault();
-                    const other = state.categories[state.categories.findIndex((x) => x.id === c.id) + (e.key === "ArrowUp" ? -1 : 1)];
+                    const other = active[active.findIndex((x) => x.id === c.id) + (e.key === "ArrowUp" ? -1 : 1)];
                     if (other) update((s) => moveCategory(s, c.id, other.id));
                   }}
                 >
@@ -346,7 +396,14 @@ export default function Hub({ state, update }: { state: AppState; update: Update
                     {p.icon}
                   </span>
                   <span className="section-name">{c.name}</span>
-                  <span className="pill">{cleared ? "All done ✓" : left}</span>
+                  <span className="pills">
+                    {urgent > 0 && (
+                      <span className="pill urgent" title="Overdue or due today">
+                        ! {urgent}
+                      </span>
+                    )}
+                    <span className="pill">{cleared ? "All done ✓" : left}</span>
+                  </span>
                   {tab === "hub" && (
                     <span className="chev" aria-hidden>
                       {open ? "▾" : "▸"}
@@ -364,6 +421,18 @@ export default function Hub({ state, update }: { state: AppState; update: Update
                   {cleared && (
                     <li className="cleared-banner">
                       <span aria-hidden>✓</span> All done. Nice work!
+                      <button
+                        type="button"
+                        className="clear-list"
+                        title="Take this list off your board. You can bring it back in Settings."
+                        onClick={() => {
+                          update((s) => archiveCategory(s, c.id));
+                          if (tab === c.id) setTab("hub");
+                          setClearedNote({ id: c.id, name: c.name });
+                        }}
+                      >
+                        Clear from board
+                      </button>
                     </li>
                   )}
                   {items.map((item) => (
@@ -376,6 +445,7 @@ export default function Hub({ state, update }: { state: AppState; update: Update
                       onDragStart={() => (drag.current = { kind: "item", id: item.id })}
                       onNudge={(e) => nudge(e, item)}
                       onRename={(title) => update((s) => renameItem(s, item.id, title))}
+                      onEdit={() => setEditItem(item)}
                       isOver={over === `item:${item.id}`}
                       onDragOverItem={(e) => {
                         if (drag.current?.kind !== "item") return;
@@ -419,6 +489,49 @@ export default function Hub({ state, update }: { state: AppState; update: Update
         />
       )}
 
+      {editItem && (
+        <AddSheet
+          categories={ordered}
+          defaultCategoryId={editItem.categoryId}
+          editing={editItem}
+          existingTitles={() => []}
+          onAdd={(input) => {
+            update((s) =>
+              updateItem(s, editItem.id, {
+                title: input.title,
+                categoryId: input.categoryId ?? editItem.categoryId,
+                repeat: input.repeat,
+                due: input.due,
+              }),
+            );
+            setEditItem(null);
+          }}
+          onDelete={() => {
+            update((s) => deleteItem(s, editItem.id));
+            setEditItem(null);
+          }}
+          onClose={() => setEditItem(null)}
+        />
+      )}
+
+      {clearedNote && (
+        <div className="toast stacked" role="status">
+          <span>{clearedNote.name} cleared from your board</span>
+          <button
+            className="link"
+            onClick={() => {
+              update((s) => restoreCategory(s, clearedNote.id));
+              setClearedNote(null);
+            }}
+          >
+            Undo
+          </button>
+          <button className="link" aria-label="Dismiss" onClick={() => setClearedNote(null)}>
+            &times;
+          </button>
+        </div>
+      )}
+
       {party && <Confetti key={party.id} pieces={party.pieces} />}
 
       {sorting && (
@@ -460,13 +573,12 @@ export default function Hub({ state, update }: { state: AppState; update: Update
           onClose={() => setToast(null)}
         />
       )}
-      <DoodleRow className="in-sheet bottom" names={["leaf", "sparkle", "mushroom", "smiley", "flower", "pumpkin"]} />
     </main>
   );
 }
 
 function ItemRow({
-  item, today, onComplete, onUncheck, onDragStart, onNudge, onRename, isOver, onDragOverItem, onDragLeaveItem, onDropItem,
+  item, today, onComplete, onUncheck, onDragStart, onNudge, onRename, onEdit, isOver, onDragOverItem, onDragLeaveItem, onDropItem,
 }: {
   item: Item;
   today: string;
@@ -475,6 +587,7 @@ function ItemRow({
   onDragStart: () => void;
   onNudge: (e: React.KeyboardEvent) => void;
   onRename: (title: string) => void;
+  onEdit: () => void;
   isOver: boolean;
   onDragOverItem: (e: React.DragEvent) => void;
   onDragLeaveItem: () => void;
@@ -507,7 +620,7 @@ function ItemRow({
         Done
       </div>
       <div
-        className={`item${doneToday ? " done" : ""}`}
+        className={`item${doneToday ? " done" : ""}${info && !doneToday && (info.state === "overdue" || info.state === "today") ? ` urgent ${info.state}` : ""}`}
         style={{ transform: `translateX(${dx}px)`, transition: dragging ? "none" : "transform .18s" }}
         onPointerDown={(e) => {
           if (doneToday || (e.target as HTMLElement).closest("button, input, [data-grip]")) return;
@@ -591,12 +704,17 @@ function ItemRow({
         )}
         {item.repeat === "daily" && !doneToday && <span className="faint small" title="Repeats every day" aria-label="Repeats every day">&#8635;</span>}
         {item.steps.length > 0 && <span className="chip faint">Step {item.steps.length + 1}</span>}
-        {info && (
-          <span className={`chip ring ${info.state}`}>
-            {info.state === "overdue" && <span aria-hidden>! </span>}
-            {info.label}
-          </span>
-        )}
+        <span className="item-end">
+          {info && (
+            <span className={`chip ring ${info.state}`}>
+              {info.state === "overdue" && <span aria-hidden>! </span>}
+              {info.label}
+            </span>
+          )}
+          <button className="icon-btn edit-btn" aria-label={`Edit ${item.title}`} title="Edit item" onClick={onEdit}>
+            &#9998;
+          </button>
+        </span>
       </div>
     </li>
   );

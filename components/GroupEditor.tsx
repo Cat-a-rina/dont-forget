@@ -53,11 +53,16 @@ export default function GroupEditor({
   const drag = useRef<{ from: string; id: string } | null>(null);
   const [over, setOver] = useState<string | null>(null);
   const [grabbedId, setGrabbedId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const visible = groups.filter((g) => g.items.length > 0);
   const grabbedTitle = grabbedId ? groups.flatMap((g) => g.items).find((i) => i.id === grabbedId)?.title : undefined;
 
   const rename = (key: string, name: string) => setGroups(groups.map((g) => (g.key === key ? { ...g, name } : g)));
+  const retitle = (id: string, title: string) => {
+    const t = title.trim();
+    if (t) setGroups(groups.map((g) => ({ ...g, items: g.items.map((i) => (i.id === id ? { ...i, title: t } : i)) })));
+  };
   const remove = (key: string, id: string) =>
     setGroups(groups.map((g) => (g.key === key ? { ...g, items: g.items.filter((i) => i.id !== id) } : g)));
 
@@ -102,6 +107,11 @@ export default function GroupEditor({
   const gripKey = (e: React.KeyboardEvent, g: EditGroup, index: number) => {
     const id = g.items[index].id;
     const held = grabbedId === id;
+    if (e.key === "F2") {
+      e.preventDefault();
+      setEditingId(id);
+      return;
+    }
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       setGrabbedId(held ? null : id);
@@ -207,7 +217,31 @@ export default function GroupEditor({
                 >
                   &#8942;&#8942;
                 </span>
-                <span>{i.title}</span>
+                {editingId === i.id ? (
+                  <input
+                    className="inline-edit grow"
+                    defaultValue={i.title}
+                    autoFocus
+                    aria-label="Item"
+                    draggable={false}
+                    onFocus={(e) => e.currentTarget.select()}
+                    onBlur={(e) => {
+                      retitle(i.id, e.currentTarget.value);
+                      setEditingId(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") e.currentTarget.blur();
+                      if (e.key === "Escape") {
+                        e.currentTarget.value = i.title;
+                        e.currentTarget.blur();
+                      }
+                    }}
+                  />
+                ) : (
+                  <span className="grow" title="Double-click to edit" onDoubleClick={() => setEditingId(i.id)}>
+                    {i.title}
+                  </span>
+                )}
                 <button className="icon-btn" aria-label={`Remove ${i.title}`} onClick={() => remove(g.key, i.id)}>
                   &times;
                 </button>

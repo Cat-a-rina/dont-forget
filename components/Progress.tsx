@@ -13,7 +13,7 @@ export default function Progress({ state, nowMs, onViewCompleted }: { state: App
 
   return (
     <section className="progress" aria-label="Your progress">
-      <Doodle name="bean" size={46} className="doodle in-sheet corner-br" />
+      <Doodle name="bean" size={34} className="doodle in-sheet side-doodle" />
       <div className="progress-head">
         <strong>Done {range === "today" ? "today" : "this week"}</strong>
         <div className="seg small-seg" role="radiogroup" aria-label="Range">

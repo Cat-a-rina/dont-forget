@@ -1,6 +1,6 @@
 import type { AppState, Category, Completion, Context, Group, Item, Repeat } from "./types";
 import { contextFor } from "./categorize";
-import { daysBetween } from "./dates";
+import { daysBetween, inferDue, todayStr } from "./dates";
 
 export const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 
@@ -27,7 +27,7 @@ export function seed(state: AppState, groups: Group[], today: string): AppState 
     }
     for (const title of g.items) {
       items.push({
-        id: uid(), title, categoryId: cat.id, repeat: defaultRepeat(cat), doneOn: null, due: null, createdAt: t++, steps: [],
+        id: uid(), title, categoryId: cat.id, repeat: defaultRepeat(cat), doneOn: null, due: inferDue(title, today), createdAt: t++, steps: [],
       });
     }
   }
@@ -52,8 +52,10 @@ export function addItem(
       categoryId = cat.id;
     }
   }
+  // Adding to a list that was cleared off the board brings it back.
+  categories = categories.map((c) => (c.id === categoryId && c.archived ? { ...c, archived: false } : c));
   const item: Item = {
-    id: uid(), title: input.title.trim(), categoryId, repeat: input.repeat, doneOn: null, due: input.due, createdAt: Date.now(), steps: [],
+    id: uid(), title: input.title.trim(), categoryId, repeat: input.repeat, doneOn: null, due: input.due ?? inferDue(input.title, todayStr()), createdAt: Date.now(), steps: [],
   };
   return { ...state, categories, items: [...state.items, item] };
 }
@@ -171,7 +173,9 @@ export function importGroups(state: AppState, groups: Group[]): AppState {
 /** Adds an empty list. Does nothing if a list with that name already exists. */
 export function addList(state: AppState, name: string): AppState {
   const n = name.trim();
-  if (!n || state.categories.some((c) => c.name.toLowerCase() === n.toLowerCase())) return state;
+  if (!n) return state;
+  const hit = state.categories.find((c) => c.name.toLowerCase() === n.toLowerCase());
+  if (hit) return hit.archived ? restoreCategory(state, hit.id) : state;
   return { ...state, categories: [...state.categories, makeCategory(n, state.categories.length)] };
 }
 
@@ -191,4 +195,39 @@ export function renameItem(state: AppState, id: string, title: string): AppState
   const t = title.trim();
   if (!t) return state;
   return { ...state, items: state.items.map((i) => (i.id === id ? { ...i, title: t } : i)) };
+}
+
+/** Edits an existing item. Moving it to another list puts it at the end of that list. */
+export function updateItem(
+  state: AppState,
+  id: string,
+  patch: { title: string; categoryId: string; repeat: Repeat; due: string | null },
+): AppState {
+  const item = state.items.find((i) => i.id === id);
+  if (!item) return state;
+  let next: AppState = {
+    ...state,
+    items: state.items.map((i) =>
+      i.id === id
+        ? { ...i, title: patch.title.trim() || i.title, repeat: patch.repeat, due: patch.due, doneOn: patch.repeat === "daily" ? i.doneOn : null }
+        : i,
+    ),
+  };
+  if (patch.categoryId !== item.categoryId) next = moveItem(next, id, patch.categoryId);
+  return next;
+}
+
+/** Removes an item without counting it as completed. */
+export function deleteItem(state: AppState, id: string): AppState {
+  return { ...state, items: state.items.filter((i) => i.id !== id) };
+}
+
+/** Takes a list off the board. Its items and completed history are kept. */
+export function archiveCategory(state: AppState, id: string): AppState {
+  return { ...state, categories: state.categories.map((c) => (c.id === id ? { ...c, archived: true } : c)) };
+}
+
+/** Brings a cleared list back onto the board. */
+export function restoreCategory(state: AppState, id: string): AppState {
+  return { ...state, categories: state.categories.map((c) => (c.id === id ? { ...c, archived: false } : c)) };
 }

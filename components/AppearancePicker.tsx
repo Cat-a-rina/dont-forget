@@ -54,7 +54,7 @@ function Choices<T extends string>({
 export default function AppearancePicker({
   appearance,
   onChange,
-  show = ["theme", "font", "layout"],
+  show = ["font", "layout"],
 }: {
   appearance: Appearance;
   onChange: (patch: Partial<Appearance>) => void;

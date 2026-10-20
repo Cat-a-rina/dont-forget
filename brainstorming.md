@@ -6,11 +6,14 @@ This doc adds the steps, states, and errors the original brainstorm didn't cover
 
 ## Steps (flows)
 
-1. **First visit:** onboarding comes first, before the user touches the tool. No account and no permissions are required, and every step can be skipped ("Skip" on each step, "Skip setup" at the top).
-   - **Setup:** the app title and a one-line description sit above step 1. (1) *Name*: used for a greeting on the hub. (2) *Import a to-do list*: pick a source (Apple Reminders, Google Tasks, Todoist) and a **preview** shows how its tasks will be filed. The screen is titled **Preview** so it is clear this is not the tool yet. The user can rename groups, drag items between groups or within a group, or remove items, and nothing is added until they confirm (or they go **Back**). The sources are simulated in this prototype and import made-up tasks. (3) *Time zone*: "Use my location" reads only the device's time zone, or pick one by hand, so the app knows when it's day (5am-5pm), evening (5-10pm), or night (10pm-5am) and can order lists to match. Name and time zone can be changed later in Settings.
-   - **List editor:** opens in a notes style. Each list has a faint "Category name (Optional)" and its own "+ Add" item box. "+ New list" adds more lists, so things can be categorized immediately, and a trash can deletes a list. Pasting many lines into an item box splits them into items. Placeholder suggestions ("e.g. Keys, wallet, phone before leaving") only appear on the line the user is typing in; other lines just say "Add an item".
-   - **Two buttons at the bottom:** **Sort it!** keeps titled lists as they are and auto-categorizes the items in untitled lists, then shows a **Preview** screen (titled so, since it is not the tool yet) to rename groups, merge them, or drag items between and within groups before confirming. **Create Manually** keeps the lists exactly as written (an untitled list becomes "Unsorted") and goes straight to the hub. Short descriptions of both sit at the top of the editor.
+1. **First visit:** the whole onboarding is one screen, before the user touches the tool. No account and no permissions are required, and every step can be skipped. The steps sit side by side (stacked on a phone), and only the step the user is on is bright. The others fade until it is their turn, and finished steps stay faded with a check mark. A "Skip to my lists" link jumps to the last step.
+   - **1. Name:** used for a greeting on the hub.
+   - **2. Import a to-do list:** pick a source (Apple Reminders, Google Tasks, Todoist) and a **Preview** shows how its tasks will be filed. The user can rename groups, drag items between groups or within a group, or go **Back**, and nothing is added until they confirm. The sources are simulated in this prototype and import made-up tasks.
+   - **3. Where are you?:** "Use my location" reads only the device's time zone, or pick one by hand, so the app knows when it's day (5am-5pm), evening (5-10pm), or night (10pm-5am) and can order lists to match.
+   - **4. Start your lists:** a notes-style editor. The two routes are described side by side at the top. Each list has a faint "Category name (Optional)" and an "Add an item" row that rests on a ruled line even when the list is empty, so it reads as a list from the start. A trash can deletes a list, and pasting many lines into an item box splits them into items. Placeholder suggestions ("e.g. Keys, wallet, phone before leaving") only appear on the line the user is typing in. "+ New list" comes first, followed by suggested lists (Groceries, Kids, Work, and so on) that are one tap away.
+   - **Sort it!** keeps titled lists as they are and auto-categorizes the items in untitled lists, then shows a full-screen **Preview** (titled so, since it is not the tool yet) to rename groups, merge them, or drag items between and within groups before confirming. **Create Manually** keeps the lists exactly as written (an untitled list becomes "Unsorted") and goes straight to the hub. Short descriptions of both sit at the top of the step.
    - Auto-sort treats a line that ends in ":" or names a known category as a heading. Items it can't place go to "Unsorted" instead of being guessed.
+   - **Keyboard:** Enter continues on every step, and the cursor moves to the new step automatically. Name and time zone can be changed later in Settings, and **Settings > Set up again** reopens steps 1 to 3.
 2. **Ordering mode picker** (Settings, with a gentle prompt after first use): Time-of-day / Date-priority / Manual (drag). Manual is the "off" state.
 3. **Item creation:** type a title, then optionally set category, repeat behavior, date/time, and context tags (leaving, arriving, night out, weekend). Defaults come from the category.
 4. **Repeat behavior**, chosen per item or category:
@@ -147,11 +150,37 @@ The hub fits a phone first. On wider screens the lists flow into columns and the
 
 ## Customizable look
 
-The default look is a printed paper to-do list: dark brown text and thin ruled lines on white, circle checkboxes, each list's name in a hand-drawn oval, and small icons (flowers, a smiley, a mushroom, a pumpkin, a leaf, a sparkle, a little bean character) along the page and on each sheet's corners. The icons are simple drawings made for this app, and they are decoration only. The look is chosen in **Settings** (and the theme and font in an optional **Pick a look** setup step), saved on the device, and never changes how anything works.
+The look is a printed paper to-do list: dark brown text and thin ruled lines on white, circle checkboxes, and each list's name as a plain title with its icon and badges on one row. Little drawings (a flower, a smiley, a mushroom, a pumpkin, a leaf, a sparkle, a heart, a bean character) form a border along the bottom of the main page, with a small one on the side edge of each list sheet (never over its items). The onboarding screen keeps its row of drawings across the top. They are simple icons made for this app, they are decoration only, and some are hidden on a phone to keep it clean.
 
-- **Themes:** Paper (white, default), Sage (soft green backdrop), Blush (pale pink), Pumpkin (warm cream with dotted lines), Checkerboard (a cream page on pink and green squares), Midnight (dark plum), and Classic (the plain original, follows the device's light or dark setting). The icons show on the paper themes only. Each theme has its own list colors, and lists still use a color, a shape, and a name together.
-- **Fonts:** Handwritten (Caveat and Patrick Hand, default), Rounded (Fredoka and Nunito), Storybook (Fraunces and Lora), Typewriter (Special Elite and Courier Prime), and Clean (Geist).
-- **Layouts:** Sheet (paper to-do pages with ruled lines, default), Cards (lists side by side), Notebook (one ruled page, top to bottom), and Scrapbook (taped, slightly tilted cards).
+- **One theme:** Paper. The other color themes were removed, and there is no theme choice in onboarding.
+- **Fonts** (Settings): Storybook (Fraunces and Lora, the default, also used in onboarding), Rounded (Fredoka and Nunito), Typewriter (Special Elite and Courier Prime), and Clean (Geist). The handwritten font was removed.
+- **Layouts** (Settings): Sheet (paper to-do pages with ruled lines, default), Cards, Notebook, and Scrapbook.
 - **Keyboard:** each group of choices is a radio group. Tab lands on the chosen option, and the arrow keys move the choice.
-- **Older saved looks:** a saved theme, font, or layout that no longer exists falls back to the default.
 - **Ideas not built yet:** a "Notes" patch with a stitched border for free text, seasonal icon sets, and choosing which icon goes on which list.
+
+## How lists are ordered (and how it is shown)
+
+- After onboarding, a floating card points at the menu button (☰) with "You're all set". It explains that lists can be ordered **By time of day**, **By date**, or **My own order**, lets the user pick one right there, and says it can be changed any time under Settings. It stays until "Got it" is pressed.
+- The ordering is also always visible and one click away: the pill under the title (for example "By time of day · Daytime") opens the same three choices.
+
+## Urgency
+
+- **Dates found in the text:** when an item is added by typing, sorting, or importing and has no date picked, the app looks for one in the words, like "due Friday", "tomorrow", "on Monday", "Oct 19", or "10/19". The wording is kept as written, and the date shows as a chip the user can change.
+- **Chips:** every dated item shows a ringed chip with a color, a label, and an "!" for overdue ("! Overdue · Thu, Oct 1", "Today", "Tomorrow", or the date).
+- **Rows:** overdue and due-today items get a tinted row, a colored edge, and bolder text.
+- **Lists:** a list header shows a "! 2" badge when it holds overdue or due-today items.
+- **Top of the hub:** a summary ("! 1 overdue · 2 due today") sits next to the greeting.
+- **By date** mode sorts lists by their soonest due item.
+
+## Editing an item
+
+- Each item has a pencil button. It opens an **Edit item** sheet to change the title, move the item to another list (tap a list), switch Once or Every day, set or clear the date, or delete it. Double-click (or F2) still edits just the title in place.
+- In the Preview screens, double-click (or F2) edits an item's title too.
+
+## Clearing a finished list
+
+- When a list is fully done, its "All done. Nice work!" row has a subtle **Clear from board** link. It takes the list off the hub (and its tab) without losing anything: its items and completed history are kept.
+- A toast says "<List> cleared from your board" with **Undo**.
+- **Settings > Cleared lists** shows every cleared list with a **Bring back** button. Adding an item to a list with the same name, or creating a list with that name, also brings it back.
+- A list with repeating items (like "Leaving the house") is hidden, not erased, so its routine returns when it is brought back.
+
