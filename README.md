@@ -11,9 +11,9 @@ A dynamic hub for the tasks, items, and events you'd normally forget but still n
 
 ```mermaid
 flowchart TD
-    A([Open app, no saved data]) --> B{Choose a start}
-    B -->|Build my own| C[Notes-style page with faint suggested title]
-    B -->|Dump everything| D[One big text box]
+    A([Open app, no saved data]) --> B{Choose a start, no account needed}
+    B -->|Build my own| C[Notes-style page, faint suggested title, + Add button]
+    B -->|Dump everything| D[One big text box with rotating example prompts]
     C --> E[Add items and categories by hand]
     D --> F[Auto-categorize]
     F --> G{Confidence high?}
@@ -77,6 +77,12 @@ flowchart TD
 ```
 
 These are copies of the diagrams in [flows.md](flows.md), since GitHub can't include one Markdown file in another. Update both together.
+
+## Status
+
+First iteration. Working: first visit (build or dump, with review screen), hub with tabs and collapsible lists, "+ Add", swipe or tap to complete with undo, chain "Next step", daily reset on return, History & Stats with a pie chart, and the three ordering modes in Settings. Not yet: dragging individual items (only lists reorder, in "My own order" mode), weekend lists, notifications, sync.
+
+To replay the first visit, open the menu, then Settings, then "Erase everything".
 
 ## Getting started
 

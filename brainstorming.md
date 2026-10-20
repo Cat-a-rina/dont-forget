@@ -6,9 +6,9 @@ This doc adds the steps, states, and errors the original brainstorm didn't cover
 
 ## Steps (flows)
 
-1. **First visit:** two cards, "Build my own" vs "Dump everything".
-   - *Build my own* opens a notes-style page with a faint suggested title.
-   - *Dump everything* opens one big text box, then a **review screen** where the user can rename, merge, split, or move auto-sorted items before confirming. This is the only extra screen, and it guards against bad auto-categorization.
+1. **First visit:** two cards, "Build my own" vs "Dump everything". No account, no permissions, no setup questions before the first save.
+   - *Build my own* opens a notes-style page with a faint suggested title ("Leaving the house") and an "+ Add" button for items.
+   - *Dump everything* opens one big text box whose placeholder rotates through examples ("Keys, wallet, phone before leaving"), then a **review screen** where the user can rename, merge, or move auto-sorted items before confirming. A line that ends in ":" or names a known category is treated as a heading. Items we can't place go to "Unsorted" instead of being guessed. This is the only extra screen, and it guards against bad auto-categorization.
 2. **Ordering mode picker** (Settings, with a gentle prompt after first use): Time-of-day / Date-priority / Manual (drag). Manual is the "off" state.
 3. **Item creation:** type a title, then optionally set category, repeat behavior, date/time, and context tags (leaving, arriving, night out, weekend). Defaults come from the category.
 4. **Repeat behavior**, chosen per item or category:
@@ -70,6 +70,26 @@ Example: open the app, check a tab, add an event, come back two days later, and 
 - **Conflicting settings:** a dated item in a time-of-day list (rule: dated and overdue items outrank time-of-day items), or two active contexts at once (stack in activation order).
 - **Gesture conflicts:** horizontal tab swipe vs swipe-to-complete. Restrict tab swipe to the tab bar or edge.
 - **Notifications (if added later):** permission denied falls back to in-app only.
+
+## First-visit research
+
+Three comparable tools were reviewed for their first screen, what they ask for, and how soon the user gets something useful. None of the reviewers could see the screens, so Calendar and Reminders details are partly inferred from docs and reviews, and Todoist's flow comes from partial, dated sources.
+
+| | Apple Reminders | Google Calendar | Todoist |
+|---|---|---|---|
+| First screen | Lists view with smart-list tiles and a "+ New Reminder" button | The calendar grid with a "+" or "Create" button | Sign-up, then onboarding questions |
+| Asks up front | Nothing mandatory | Only a Google Account | Email, password, use case, experience level, profile, notifications |
+| First useful moment | 2 taps plus typing | About 3 steps on web | About 8+ screens, then a pre-filled task list |
+| Does automatically | Smart lists fill by date and flag | Gmail adds events from confirmation emails | Seeds a sample project from onboarding answers |
+| Weak for a first-timer | Smart lists mistaken for folders, shown empty | No guidance or sample content | Account and notification asks come before any value |
+
+What we took from it:
+1. No account and no setup before the first save.
+2. Offer the two paths at the capture step. None of the three has "dump everything and sort it".
+3. Rotating example prompts in the dump box teach the input style without an extra screen.
+4. Show the first auto-sort as labeled, editable groups, and never show empty category tiles.
+5. Defer notifications (out of v1 anyway).
+6. Every main screen keeps a clear "+ Add" button, as all three tools do.
 
 ## Decisions and assumptions
 

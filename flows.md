@@ -6,9 +6,9 @@ Diagrams for the app's main flows. Source of truth for behavior is [brainstormin
 
 ```mermaid
 flowchart TD
-    A([Open app, no saved data]) --> B{Choose a start}
-    B -->|Build my own| C[Notes-style page with faint suggested title]
-    B -->|Dump everything| D[One big text box]
+    A([Open app, no saved data]) --> B{Choose a start, no account needed}
+    B -->|Build my own| C[Notes-style page, faint suggested title, + Add button]
+    B -->|Dump everything| D[One big text box with rotating example prompts]
     C --> E[Add items and categories by hand]
     D --> F[Auto-categorize]
     F --> G{Confidence high?}
